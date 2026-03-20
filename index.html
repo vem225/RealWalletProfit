@@ -6,6 +6,10 @@
     <title>RealWalletProfit | Элитный портфель</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"></script>
+    
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -327,6 +331,69 @@
     tg.ready();
     tg.expand();
 
+    // ==================== FIREBASE НАСТРОЙКА ====================
+    // Вставьте сюда свои данные из Firebase (полученные при регистрации веб-приложения)
+    const firebaseConfig = {
+        apiKey: "ВАШ_API_KEY",
+        authDomain: "ВАШ_AUTH_DOMAIN",
+        projectId: "ВАШ_PROJECT_ID",
+        storageBucket: "ВАШ_STORAGE_BUCKET",
+        messagingSenderId: "ВАШ_SENDER_ID",
+        appId: "ВАШ_APP_ID"
+    };
+
+    // Инициализация Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Получаем ID пользователя Telegram
+    const user = tg.initDataUnsafe?.user;
+    const userId = user ? String(user.id) : null;
+    if (!userId) {
+        tg.showAlert('Ошибка: не удалось определить пользователя Telegram. Данные не будут синхронизироваться.');
+    }
+
+    // Ссылка на документ пользователя в коллекции 'portfolios'
+    const portfolioRef = userId ? db.collection('portfolios').doc(userId) : null;
+
+    // Глобальная переменная портфеля
+    let myPortfolio = [];
+    let isLoading = true;
+
+    // --- Функция загрузки портфеля из Firestore ---
+    async function loadPortfolio() {
+        if (!portfolioRef) return;
+        try {
+            const doc = await portfolioRef.get();
+            if (doc.exists) {
+                const data = doc.data();
+                myPortfolio = data.portfolio || [];
+            } else {
+                // Создаём пустой портфель
+                myPortfolio = [];
+                await portfolioRef.set({ portfolio: myPortfolio });
+            }
+            isLoading = false;
+            updatePortfolio();
+        } catch (error) {
+            console.error('Ошибка загрузки портфеля:', error);
+            tg.showAlert('Не удалось загрузить данные. Проверьте интернет и настройки Firebase.');
+            isLoading = false;
+            updatePortfolio(); // покажем пустой
+        }
+    }
+
+    // --- Функция сохранения портфеля в Firestore ---
+    async function savePortfolio() {
+        if (!portfolioRef || isLoading) return;
+        try {
+            await portfolioRef.set({ portfolio: myPortfolio });
+        } catch (error) {
+            console.error('Ошибка сохранения портфеля:', error);
+            tg.showAlert('Не удалось сохранить данные. Изменения могут быть потеряны.');
+        }
+    }
+
     // --- Каталог активов (с ADI и Monad) ---
     const assetsCatalog = [
         { id: "bitcoin", name: "Bitcoin (BTC)", keywords: ["bitcoin", "btc", "биткоин"] },
@@ -363,13 +430,7 @@
         { id: "monad", name: "Monad (MON)", keywords: ["monad", "mon"] }
     ];
 
-    // --- Структура портфеля: { id, amount, investedUSD, history: [{date, amountDelta, investedDelta}] } ---
-    let myPortfolio = JSON.parse(localStorage.getItem('userPortfolio')) || [];
-
-    // Функция сохранения
-    function savePortfolio() {
-        localStorage.setItem('userPortfolio', JSON.stringify(myPortfolio));
-    }
+    // --- Логика работы с портфелем ---
 
     // Добавление/объединение актива
     function addOrUpdateAsset(assetId, amountDelta, investedDelta) {
@@ -436,10 +497,18 @@
     // Обновление главного экрана
     async function updatePortfolio() {
         const assetListEl = document.getElementById('assetList');
+        if (isLoading) {
+            assetListEl.innerHTML = '<div style="text-align: center; padding: 32px; color: var(--hint-color);">Загрузка портфеля...</div>';
+            document.getElementById('totalBalance').innerText = '$0.00';
+            document.getElementById('totalProfit').innerText = 'Загрузка...';
+            return;
+        }
+
         if (!myPortfolio.length) {
             assetListEl.innerHTML = '<div style="text-align: center; padding: 32px; color: var(--hint-color);">Портфель пуст. Добавьте активы ➕</div>';
             document.getElementById('totalBalance').innerText = '$0.00';
             document.getElementById('totalProfit').innerText = 'Нет данных';
+            document.getElementById('totalProfit').className = 'profit-badge';
             return;
         }
 
@@ -673,8 +742,8 @@
         }
     };
 
-    // Инициализация
-    updatePortfolio();
+    // Запуск: загружаем портфель из Firebase
+    loadPortfolio();
 </script>
 </body>
 </html>
