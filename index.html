@@ -25,6 +25,8 @@
             --button-bg: #0f172a;
             --button-text: #ffffff;
             --card-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.02);
+            --invested-bg: rgba(0, 0, 0, 0.04);
+            --invested-color: #334155;
         }
         body.dark {
             --bg-color: #0f172a;
@@ -35,6 +37,8 @@
             --button-bg: #2d3a5e;
             --button-text: #ffffff;
             --card-shadow: 0 10px 25px -5px rgba(0,0,0,0.3), 0 8px 10px -6px rgba(0,0,0,0.2);
+            --invested-bg: rgba(148, 163, 184, 0.15);
+            --invested-color: #cbd5e1;
         }
         body {
             background-color: var(--bg-color);
@@ -94,6 +98,20 @@
         }
         .positive { background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(34,197,94,0.05)); color: #22c55e; }
         .negative { background: linear-gradient(135deg, rgba(239,68,68,0.2), rgba(239,68,68,0.05)); color: #ef4444; }
+
+        /* Новый стиль для общей суммы инвестиций */
+        .invested-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: 500;
+            background: var(--invested-bg);
+            color: var(--invested-color);
+            margin-top: 8px;
+            backdrop-filter: blur(4px);
+            letter-spacing: 0.3px;
+        }
 
         .assets-header { font-size: 20px; font-weight: 700; margin-bottom: 20px; margin-top: 8px; letter-spacing: -0.3px; display: flex; justify-content: space-between; align-items: baseline;}
         
@@ -272,6 +290,8 @@
         <div class="balance-label">Общая стоимость портфеля</div>
         <div class="balance-amount" id="totalBalance">$0.00</div>
         <div class="profit-badge" id="totalProfit">Загрузка...</div>
+        <!-- Новая строка с общей суммой инвестиций -->
+        <div class="invested-badge" id="totalInvestedBadge">Общая сумма инвестиций: $0.00</div>
     </div>
 
     <div class="assets-header">
@@ -440,6 +460,7 @@
             assetListEl.innerHTML = '<div style="text-align: center; padding: 32px; color: var(--hint-color);">Портфель пуст. Добавьте активы ➕</div>';
             document.getElementById('totalBalance').innerText = '$0.00';
             document.getElementById('totalProfit').innerText = 'Нет данных';
+            document.getElementById('totalInvestedBadge').innerHTML = 'Общая сумма инвестиций: $0.00';
             return;
         }
 
@@ -480,6 +501,9 @@
 
             assetListEl.innerHTML = html;
             document.getElementById('totalBalance').innerText = formatMoney(totalCurrent);
+            // Обновляем общую сумму инвестиций
+            document.getElementById('totalInvestedBadge').innerHTML = `Общая сумма инвестиций: ${formatMoney(totalInvested)}`;
+            
             const totalPnL = totalCurrent - totalInvested;
             const profitEl = document.getElementById('totalProfit');
             if (totalPnL >= 0) {
