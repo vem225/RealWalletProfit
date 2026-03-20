@@ -11,6 +11,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js"></script>
     
     <style>
+        /* ваш стиль без изменений (полный код стилей) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -335,6 +336,7 @@
     const firebaseConfig = {
         apiKey: "AIzaSyCJ6ifAEU1wJOGq_gVnm8WqN-Nm2T4mmz8",
         authDomain: "realwalletprofit-e6eef.firebaseapp.com",
+        databaseURL: "https://realwalletprofit-e6eef-default-rtdb.europe-west1.firebasedatabase.app/",
         projectId: "realwalletprofit-e6eef",
         storageBucket: "realwalletprofit-e6eef.firebasestorage.app",
         messagingSenderId: "1061048218158",
@@ -344,7 +346,7 @@
 
     // Инициализация Firebase
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database(); // Realtime Database
+    const db = firebase.database();
 
     // Получаем ID пользователя Telegram
     const user = tg.initDataUnsafe?.user;
@@ -354,7 +356,7 @@
     console.log('userId:', userId);
 
     if (!userId) {
-        tg.showAlert('Ошибка: не удалось определить пользователя Telegram. Данные не будут синхронизироваться. Пожалуйста, откройте приложение через официального бота.');
+        tg.showAlert('Ошибка: не удалось определить пользователя Telegram. Данные не будут синхронизироваться.');
     }
 
     // Ссылка на данные пользователя в Realtime Database
