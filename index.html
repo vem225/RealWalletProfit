@@ -6,9 +6,9 @@
     <title>RealWalletProfit | Элитный портфель</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
-    <!-- Firebase SDK -->
+    <!-- Firebase SDK (Realtime Database) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js"></script>
     
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -331,48 +331,58 @@
     tg.ready();
     tg.expand();
 
-    // ==================== FIREBASE НАСТРОЙКА ====================
-    // Вставьте сюда свои данные из Firebase (полученные при регистрации веб-приложения)
+    // ==================== FIREBASE НАСТРОЙКА (Realtime Database) ====================
     const firebaseConfig = {
-          apiKey: "AIzaSyCJ6ifAEU1wJOGq_gVnm8WqN-Nm2T4mmz8",
-          authDomain: "realwalletprofit-e6eef.firebaseapp.com",
-          projectId: "realwalletprofit-e6eef",
-          storageBucket: "realwalletprofit-e6eef.firebasestorage.app",
-          messagingSenderId: "1061048218158",
-          appId: "1:1061048218158:web:82cf8f2208e30fe802e5bf",
-          measurementId: "G-G6T7DECKML"
+        apiKey: "AIzaSyCJ6ifAEU1wJOGq_gVnm8WqN-Nm2T4mmz8",
+        authDomain: "realwalletprofit-e6eef.firebaseapp.com",
+        projectId: "realwalletprofit-e6eef",
+        storageBucket: "realwalletprofit-e6eef.firebasestorage.app",
+        messagingSenderId: "1061048218158",
+        appId: "1:1061048218158:web:82cf8f2208e30fe802e5bf",
+        measurementId: "G-G6T7DECKML"
     };
 
     // Инициализация Firebase
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    const db = firebase.database(); // Realtime Database
 
     // Получаем ID пользователя Telegram
     const user = tg.initDataUnsafe?.user;
     const userId = user ? String(user.id) : null;
+
+    console.log('Telegram user:', user);
+    console.log('userId:', userId);
+
     if (!userId) {
-        tg.showAlert('Ошибка: не удалось определить пользователя Telegram. Данные не будут синхронизироваться.');
+        tg.showAlert('Ошибка: не удалось определить пользователя Telegram. Данные не будут синхронизироваться. Пожалуйста, откройте приложение через официального бота.');
     }
 
-    // Ссылка на документ пользователя в коллекции 'portfolios'
-    const portfolioRef = userId ? db.collection('portfolios').doc(userId) : null;
+    // Ссылка на данные пользователя в Realtime Database
+    const userPortfolioRef = userId ? db.ref(`portfolios/${userId}`) : null;
 
-    // Глобальная переменная портфеля
     let myPortfolio = [];
     let isLoading = true;
 
-    // --- Функция загрузки портфеля из Firestore ---
+    // --- Загрузка портфеля ---
     async function loadPortfolio() {
-        if (!portfolioRef) return;
+        if (!userPortfolioRef) {
+            console.warn('Нет userPortfolioRef, userId отсутствует');
+            isLoading = false;
+            updatePortfolio();
+            return;
+        }
+
         try {
-            const doc = await portfolioRef.get();
-            if (doc.exists) {
-                const data = doc.data();
-                myPortfolio = data.portfolio || [];
+            console.log('Загружаем данные из Realtime Database...');
+            const snapshot = await userPortfolioRef.once('value');
+            const data = snapshot.val();
+            if (data && data.portfolio) {
+                myPortfolio = data.portfolio;
+                console.log('Данные загружены, активов:', myPortfolio.length);
             } else {
-                // Создаём пустой портфель
+                console.log('Документ не найден, создаём пустой портфель');
                 myPortfolio = [];
-                await portfolioRef.set({ portfolio: myPortfolio });
+                await userPortfolioRef.set({ portfolio: myPortfolio });
             }
             isLoading = false;
             updatePortfolio();
@@ -380,15 +390,20 @@
             console.error('Ошибка загрузки портфеля:', error);
             tg.showAlert('Не удалось загрузить данные. Проверьте интернет и настройки Firebase.');
             isLoading = false;
-            updatePortfolio(); // покажем пустой
+            updatePortfolio();
         }
     }
 
-    // --- Функция сохранения портфеля в Firestore ---
+    // --- Сохранение портфеля ---
     async function savePortfolio() {
-        if (!portfolioRef || isLoading) return;
+        if (!userPortfolioRef) return;
+        if (isLoading) {
+            console.log('Сохранение отложено, данные ещё загружаются');
+            return;
+        }
         try {
-            await portfolioRef.set({ portfolio: myPortfolio });
+            await userPortfolioRef.set({ portfolio: myPortfolio });
+            console.log('Портфель сохранён');
         } catch (error) {
             console.error('Ошибка сохранения портфеля:', error);
             tg.showAlert('Не удалось сохранить данные. Изменения могут быть потеряны.');
@@ -433,7 +448,6 @@
 
     // --- Логика работы с портфелем ---
 
-    // Добавление/объединение актива
     function addOrUpdateAsset(assetId, amountDelta, investedDelta) {
         const existing = myPortfolio.find(a => a.id === assetId);
         const now = new Date().toLocaleString();
@@ -463,7 +477,6 @@
         updatePortfolio();
     }
 
-    // Удаление актива
     function deleteAsset(assetId) {
         myPortfolio = myPortfolio.filter(a => a.id !== assetId);
         savePortfolio();
@@ -471,7 +484,6 @@
         closeDetailModal();
     }
 
-    // Редактирование: заменить количество и сумму, добавив запись в историю
     function editAsset(assetId, newAmount, newInvested) {
         const asset = myPortfolio.find(a => a.id === assetId);
         if (asset) {
@@ -492,10 +504,8 @@
         }
     }
 
-    // Форматирование денег
     const formatMoney = (amount) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 
-    // Обновление главного экрана
     async function updatePortfolio() {
         const assetListEl = document.getElementById('assetList');
         if (isLoading) {
@@ -560,7 +570,6 @@
                 profitEl.innerText = `${formatMoney(totalPnL)} убытка`;
             }
 
-            // Вешаем обработчики на карточки
             document.querySelectorAll('.asset-card').forEach(card => {
                 card.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -575,7 +584,6 @@
         }
     }
 
-    // Показать детали актива и историю
     function showAssetDetails(assetId) {
         const asset = myPortfolio.find(a => a.id === assetId);
         if (!asset) return;
@@ -599,7 +607,6 @@
         }
         document.getElementById('historyList').innerHTML = historyHtml;
 
-        // Временно сохраняем id для редактирования/удаления
         window.currentAssetId = assetId;
         document.getElementById('detailModal').style.display = 'flex';
     }
@@ -608,7 +615,6 @@
         document.getElementById('detailModal').style.display = 'none';
     }
 
-    // Модалка добавления/редактирования
     const addModal = document.getElementById('addModal');
     let isEditMode = false;
     let editingAssetId = null;
@@ -645,7 +651,6 @@
         selectedAsset = null;
     }
 
-    // Обработка сохранения
     document.getElementById('saveAssetBtn').addEventListener('click', () => {
         if (!selectedAsset) {
             tg.showAlert('Выберите актив из списка');
@@ -665,7 +670,6 @@
         closeAddModal();
     });
 
-    // --- Автодополнение ---
     let selectedAsset = null;
     const searchInput = document.getElementById('assetSearchInput');
     const suggestionsBox = document.getElementById('suggestionsList');
@@ -704,7 +708,6 @@
         }
     });
 
-    // --- Темная/светлая ---
     let currentTheme = localStorage.getItem('theme') || 'dark';
     function applyTheme(theme) {
         document.body.className = theme;
@@ -717,7 +720,6 @@
         applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
     });
 
-    // --- TON Connect заглушка ---
     try {
         const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
             manifestUrl: 'https://ton-connect.github.io/demo-dapp-with-react-ui/tonconnect-manifest.json',
@@ -728,7 +730,6 @@
         });
     } catch(e) { console.log(e); }
 
-    // --- События ---
     document.getElementById('openModalBtn').onclick = () => openAddModal();
     document.getElementById('closeModalBtn').onclick = closeAddModal;
     document.getElementById('closeDetailBtn').onclick = closeDetailModal;
@@ -743,7 +744,6 @@
         }
     };
 
-    // Запуск: загружаем портфель из Firebase
     loadPortfolio();
 </script>
 </body>
