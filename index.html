@@ -11,7 +11,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     
     <style>
-        /* все стили оставляем без изменений (как в предыдущем коде) */
+        /* ваш стиль без изменений (копия из предыдущего) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -336,7 +336,6 @@
     const user = tg.initDataUnsafe?.user;
     let userId = user ? String(user.id) : null;
 
-    // Если userId не определён (например, тестируем в браузере), используем localStorage с фиктивным ID
     if (!userId) {
         console.warn('Telegram user not found, switching to local storage mode');
         let localId = localStorage.getItem('localUserId');
@@ -345,13 +344,9 @@
             localStorage.setItem('localUserId', localId);
         }
         userId = localId;
-        // Показываем уведомление через alert, так как showAlert может не работать
-        setTimeout(() => {
-            alert('⚠️ Режим локального тестирования. Данные сохраняются только в этом браузере.');
-        }, 100);
+        alert('⚠️ Режим локального тестирования. Данные сохраняются только в этом браузере.');
     }
 
-    console.log('Telegram user:', user);
     console.log('userId:', userId);
 
     // ==================== FIREBASE НАСТРОЙКА ====================
@@ -369,7 +364,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Ссылка на данные пользователя в Realtime Database
     const userPortfolioRef = db.ref(`portfolios/${userId}`);
 
     let myPortfolio = [];
@@ -393,9 +387,7 @@
             updatePortfolio();
         } catch (error) {
             console.error('Ошибка загрузки портфеля:', error);
-            try {
-                tg.showAlert('Не удалось загрузить данные. Проверьте интернет и настройки Firebase.');
-            } catch(e) {}
+            alert('Не удалось загрузить данные. Проверьте интернет и настройки Firebase.');
             isLoading = false;
             updatePortfolio();
         }
@@ -412,13 +404,11 @@
             console.log('Портфель сохранён');
         } catch (error) {
             console.error('Ошибка сохранения портфеля:', error);
-            try {
-                tg.showAlert('Не удалось сохранить данные. Изменения могут быть потеряны.');
-            } catch(e) {}
+            alert('Не удалось сохранить данные. Изменения могут быть потеряны.');
         }
     }
 
-    // --- Каталог активов (с ADI и Monad) ---
+    // --- Каталог активов ---
     const assetsCatalog = [
         { id: "bitcoin", name: "Bitcoin (BTC)", keywords: ["bitcoin", "btc", "биткоин"] },
         { id: "ethereum", name: "Ethereum (ETH)", keywords: ["ethereum", "eth", "эфир"] },
@@ -456,6 +446,7 @@
 
     // --- Логика работы с портфелем ---
     function addOrUpdateAsset(assetId, amountDelta, investedDelta) {
+        console.log('addOrUpdateAsset called', assetId, amountDelta, investedDelta);
         const existing = myPortfolio.find(a => a.id === assetId);
         const now = new Date().toLocaleString();
         if (existing) {
@@ -467,6 +458,7 @@
                 investedDelta: investedDelta,
                 type: 'add'
             });
+            console.log('Обновлён существующий актив', existing);
         } else {
             myPortfolio.push({
                 id: assetId,
@@ -479,6 +471,7 @@
                     type: 'add'
                 }]
             });
+            console.log('Добавлен новый актив', myPortfolio[myPortfolio.length-1]);
         }
         savePortfolio();
         updatePortfolio();
@@ -587,9 +580,7 @@
 
         } catch (err) {
             console.error(err);
-            try {
-                tg.showAlert('Ошибка загрузки цен. Проверьте интернет.');
-            } catch(e) {}
+            alert('Ошибка загрузки цен. Проверьте интернет.');
         }
     }
 
@@ -661,18 +652,15 @@
     }
 
     document.getElementById('saveAssetBtn').addEventListener('click', () => {
+        console.log('Save button clicked, selectedAsset:', selectedAsset);
         if (!selectedAsset) {
-            try {
-                tg.showAlert('Выберите актив из списка');
-            } catch(e) { alert('Выберите актив из списка'); }
+            alert('Выберите актив из списка');
             return;
         }
         const amount = parseFloat(document.getElementById('coinAmountInput').value);
         const spent = parseFloat(document.getElementById('coinSpentInput').value);
         if (isNaN(amount) || isNaN(spent) || amount <= 0 || spent <= 0) {
-            try {
-                tg.showAlert('Введите корректные значения');
-            } catch(e) { alert('Введите корректные значения'); }
+            alert('Введите корректные значения');
             return;
         }
         if (isEditMode && editingAssetId) {
@@ -701,6 +689,7 @@
             div.className = 'autocomplete-suggestion';
             div.textContent = asset.name;
             div.onclick = () => {
+                console.log('Asset selected:', asset);
                 selectedAsset = asset;
                 searchInput.value = asset.name;
                 suggestionsBox.style.display = 'none';
@@ -739,7 +728,7 @@
             buttonRootId: 'ton-connect-button'
         });
         tonConnectUI.onStatusChange(wallet => {
-            if (wallet) try { tg.showAlert('Кошелек подключен'); } catch(e) { alert('Кошелек подключен'); }
+            if (wallet) alert('Кошелек подключен');
         });
     } catch(e) { console.log(e); }
 
