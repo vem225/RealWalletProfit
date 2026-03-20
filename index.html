@@ -26,7 +26,6 @@
         }
         .app-title p { font-size: 13px; color: var(--tg-theme-hint-color, #8e8e93); }
 
-        /* Контейнер для кнопки TON Connect */
         #ton-connect-button { display: flex; justify-content: flex-end; }
 
         .balance-card {
@@ -90,6 +89,35 @@
             background-color: var(--tg-theme-secondary-bg-color, #f8f8f8);
             color: var(--tg-theme-text-color, #000); font-size: 16px; outline: none;
         }
+        /* Стили для автодополнения */
+        .autocomplete-container {
+            position: relative;
+        }
+        .autocomplete-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: var(--tg-theme-secondary-bg-color, #ffffff);
+            border: 1px solid var(--tg-theme-separator-color, #ccc);
+            border-radius: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 10;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .autocomplete-suggestion {
+            padding: 12px 14px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--tg-theme-separator-color, #f0f0f0);
+        }
+        .autocomplete-suggestion:last-child {
+            border-bottom: none;
+        }
+        .autocomplete-suggestion:hover {
+            background-color: var(--tg-theme-button-color, #2a7f6e);
+            color: var(--tg-theme-button-text-color, white);
+        }
         .modal-buttons { display: flex; gap: 12px; margin-top: 24px; }
         .btn-cancel { background-color: var(--tg-theme-secondary-bg-color, #e9e9ef); color: var(--tg-theme-text-color, #000); }
     </style>
@@ -125,8 +153,11 @@
         <div class="modal-title">Новый актив</div>
         
         <div class="input-group">
-            <label>ID монеты (например: tether-gold, bitcoin, the-open-network)</label>
-            <input type="text" id="coinIdInput" placeholder="tether-gold">
+            <label>Поиск актива</label>
+            <div class="autocomplete-container">
+                <input type="text" id="assetSearchInput" placeholder="Введите название (например, золото, bitcoin)" autocomplete="off">
+                <div id="suggestionsList" class="autocomplete-suggestions" style="display: none;"></div>
+            </div>
         </div>
         
         <div class="input-group">
@@ -147,31 +178,60 @@
 </div>
 
 <script>
+    // ---------- Предопределённый список активов с ключевыми словами ----------
+    const assetsCatalog = [
+        { id: "bitcoin", name: "Bitcoin (BTC)", keywords: ["bitcoin", "btc", "биткоин", "биткойн"] },
+        { id: "ethereum", name: "Ethereum (ETH)", keywords: ["ethereum", "eth", "эфириум", "эфир"] },
+        { id: "the-open-network", name: "TON (Toncoin)", keywords: ["ton", "toncoin", "the open network", "тон"] },
+        { id: "solana", name: "Solana (SOL)", keywords: ["solana", "sol", "солана"] },
+        { id: "binancecoin", name: "BNB", keywords: ["bnb", "binance coin", "бинанс"] },
+        { id: "ripple", name: "XRP", keywords: ["xrp", "ripple", "рипл"] },
+        { id: "dogecoin", name: "Dogecoin (DOGE)", keywords: ["dogecoin", "doge", "доге", "додж"] },
+        { id: "cardano", name: "Cardano (ADA)", keywords: ["cardano", "ada", "кардано"] },
+        { id: "avalanche-2", name: "Avalanche (AVAX)", keywords: ["avalanche", "avax"] },
+        { id: "polygon-ecosystem-token", name: "Polygon (MATIC)", keywords: ["polygon", "matic", "полигон"] },
+        { id: "chainlink", name: "Chainlink (LINK)", keywords: ["chainlink", "link", "чейнлинк"] },
+        { id: "uniswap", name: "Uniswap (UNI)", keywords: ["uniswap", "uni"] },
+        { id: "litecoin", name: "Litecoin (LTC)", keywords: ["litecoin", "ltc", "лайткоин"] },
+        { id: "tether", name: "Tether (USDT)", keywords: ["tether", "usdt", "тезер"] },
+        { id: "usd-coin", name: "USD Coin (USDC)", keywords: ["usdc", "usd coin"] },
+        { id: "tether-gold", name: "Tether Gold (XAUt)", keywords: ["tether gold", "xaut", "золото", "gold", "xaute", "tether gold"] },
+        { id: "stellar", name: "Stellar (XLM)", keywords: ["stellar", "xlm"] },
+        { id: "cosmos", name: "Cosmos (ATOM)", keywords: ["cosmos", "atom"] },
+        { id: "near", name: "NEAR Protocol (NEAR)", keywords: ["near", "near protocol"] },
+        { id: "algorand", name: "Algorand (ALGO)", keywords: ["algorand", "algo"] },
+        { id: "filecoin", name: "Filecoin (FIL)", keywords: ["filecoin", "fil"] },
+        { id: "theta-token", name: "Theta (THETA)", keywords: ["theta"] },
+        { id: "vechain", name: "VeChain (VET)", keywords: ["vechain", "vet"] },
+        { id: "eos", name: "EOS", keywords: ["eos"] },
+        { id: "tezos", name: "Tezos (XTZ)", keywords: ["tezos", "xtz"] },
+        { id: "aave", name: "Aave (AAVE)", keywords: ["aave"] },
+        { id: "maker", name: "Maker (MKR)", keywords: ["maker", "mkr"] },
+        { id: "compound-governance-token", name: "Compound (COMP)", keywords: ["compound", "comp"] },
+        { id: "yearn-finance", name: "Yearn.finance (YFI)", keywords: ["yearn", "yfi"] },
+        { id: "pancakeswap-token", name: "PancakeSwap (CAKE)", keywords: ["pancake", "cake"] }
+    ];
+
+    // ---------- Инициализация Telegram ----------
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
 
-    // Инициализация TON Connect
-    // В манифесте указывается ссылка на JSON файл с описанием твоего приложения. 
-    // Для тестов можно использовать этот моковый манифест, но для продакшена его нужно будет залить на твой GitHub/сервер.
+    // ---------- TON Connect (тестовая заглушка) ----------
     const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
         manifestUrl: 'https://ton-connect.github.io/demo-dapp-with-react-ui/tonconnect-manifest.json',
         buttonRootId: 'ton-connect-button'
     });
-
-    // Отслеживаем подключение кошелька
     tonConnectUI.onStatusChange(wallet => {
         if (wallet) {
             console.log('Кошелек подключен:', wallet.account.address);
             tg.showAlert('TON Кошелек успешно подключен! (Чтение баланса добавим позже)');
-            // TODO: Здесь будем делать запрос в блокчейн TON для получения баланса токенов
         }
     });
 
-    // --- Логика Портфеля ---
-
-    // Загружаем данные из памяти телефона или создаем пустой массив
+    // ---------- Портфель ----------
     let myPortfolio = JSON.parse(localStorage.getItem('userPortfolio')) || [];
+    let selectedAsset = null; // выбранный актив из каталога
 
     const formatMoney = (amount) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 
@@ -196,7 +256,6 @@
             assetListEl.innerHTML = ''; 
 
             myPortfolio.forEach(coin => {
-                // Если API не вернул цену (например, неверный ID), ставим 0
                 const currentPrice = prices[coin.id] ? prices[coin.id].usd : 0;
                 const currentValue = coin.amount * currentPrice;
                 const investedValue = coin.investedUSD;
@@ -210,10 +269,14 @@
                 const pnlClass = pnlUSD >= 0 ? 'pnl-pos' : 'pnl-neg';
                 const pnlSign = pnlUSD >= 0 ? '+' : '';
                 
+                // Найдём название актива из каталога (для отображения)
+                const assetInfo = assetsCatalog.find(a => a.id === coin.id);
+                const displayName = assetInfo ? assetInfo.name : coin.id.replace(/-/g, ' ').toUpperCase();
+                
                 assetListEl.innerHTML += `
                     <div class="asset-item">
                         <div class="asset-info">
-                            <span class="asset-name">${coin.id.replace(/-/g, ' ')}</span>
+                            <span class="asset-name">${displayName}</span>
                             <span class="asset-amount">${coin.amount} (потрачено $${investedValue})</span>
                         </div>
                         <div class="asset-financials">
@@ -243,10 +306,62 @@
         }
     }
 
-    // --- Логика Модального Окна ---
+    // ---------- Автодополнение для поиска актива ----------
+    const searchInput = document.getElementById('assetSearchInput');
+    const suggestionsBox = document.getElementById('suggestionsList');
+
+    function filterAssets(query) {
+        if (!query.trim()) return [];
+        const lowerQuery = query.toLowerCase();
+        return assetsCatalog.filter(asset => 
+            asset.name.toLowerCase().includes(lowerQuery) ||
+            asset.keywords.some(kw => kw.toLowerCase().includes(lowerQuery))
+        );
+    }
+
+    function showSuggestions(suggestions) {
+        if (suggestions.length === 0) {
+            suggestionsBox.style.display = 'none';
+            return;
+        }
+        suggestionsBox.innerHTML = '';
+        suggestions.forEach(asset => {
+            const div = document.createElement('div');
+            div.className = 'autocomplete-suggestion';
+            div.textContent = asset.name;
+            div.addEventListener('click', () => {
+                selectAsset(asset);
+            });
+            suggestionsBox.appendChild(div);
+        });
+        suggestionsBox.style.display = 'block';
+    }
+
+    function selectAsset(asset) {
+        selectedAsset = asset;
+        searchInput.value = asset.name;
+        suggestionsBox.style.display = 'none';
+    }
+
+    searchInput.addEventListener('input', (e) => {
+        const query = e.target.value;
+        const suggestions = filterAssets(query);
+        showSuggestions(suggestions);
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
+            suggestionsBox.style.display = 'none';
+        }
+    });
+
+    // ---------- Модальное окно ----------
     const modal = document.getElementById('addModal');
-    
     document.getElementById('openModalBtn').addEventListener('click', () => {
+        selectedAsset = null;
+        searchInput.value = '';
+        document.getElementById('coinAmountInput').value = '';
+        document.getElementById('coinSpentInput').value = '';
         modal.style.display = 'flex';
     });
     
@@ -255,28 +370,37 @@
     });
 
     document.getElementById('saveAssetBtn').addEventListener('click', () => {
-        const id = document.getElementById('coinIdInput').value.trim().toLowerCase();
+        if (!selectedAsset) {
+            tg.showAlert('Пожалуйста, выберите актив из списка.');
+            return;
+        }
         const amount = parseFloat(document.getElementById('coinAmountInput').value);
         const spent = parseFloat(document.getElementById('coinSpentInput').value);
 
-        if (!id || isNaN(amount) || isNaN(spent)) {
-            tg.showAlert('Пожалуйста, заполните все поля корректно.');
+        if (isNaN(amount) || isNaN(spent) || amount <= 0 || spent <= 0) {
+            tg.showAlert('Пожалуйста, укажите корректное количество и сумму вложений.');
             return;
         }
 
-        // Добавляем в массив
-        myPortfolio.push({ id: id, amount: amount, investedUSD: spent });
+        // Проверяем, не существует ли уже такой актив в портфеле (опционально)
+        const existing = myPortfolio.find(coin => coin.id === selectedAsset.id);
+        if (existing) {
+            if (confirm('Этот актив уже есть в портфеле. Добавить как отдельную позицию?')) {
+                // разрешаем дублирование
+            } else {
+                return;
+            }
+        }
+
+        myPortfolio.push({
+            id: selectedAsset.id,
+            amount: amount,
+            investedUSD: spent
+        });
         
-        // Сохраняем в память телефона
         localStorage.setItem('userPortfolio', JSON.stringify(myPortfolio));
         
-        // Очищаем форму и закрываем
-        document.getElementById('coinIdInput').value = '';
-        document.getElementById('coinAmountInput').value = '';
-        document.getElementById('coinSpentInput').value = '';
         modal.style.display = 'none';
-
-        // Обновляем интерфейс
         updatePortfolio();
     });
 
