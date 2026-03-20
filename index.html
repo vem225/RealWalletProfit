@@ -11,7 +11,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     
     <style>
-        /* ваш стиль без изменений (полный код стилей) */
+        /* все стили оставляем без изменений (как в предыдущем коде) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -332,11 +332,33 @@
     tg.ready();
     tg.expand();
 
-    // ==================== FIREBASE НАСТРОЙКА (Realtime Database) ====================
+    // ==================== Обработка отсутствия Telegram WebApp ====================
+    const user = tg.initDataUnsafe?.user;
+    let userId = user ? String(user.id) : null;
+
+    // Если userId не определён (например, тестируем в браузере), используем localStorage с фиктивным ID
+    if (!userId) {
+        console.warn('Telegram user not found, switching to local storage mode');
+        let localId = localStorage.getItem('localUserId');
+        if (!localId) {
+            localId = 'local_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('localUserId', localId);
+        }
+        userId = localId;
+        // Показываем уведомление через alert, так как showAlert может не работать
+        setTimeout(() => {
+            alert('⚠️ Режим локального тестирования. Данные сохраняются только в этом браузере.');
+        }, 100);
+    }
+
+    console.log('Telegram user:', user);
+    console.log('userId:', userId);
+
+    // ==================== FIREBASE НАСТРОЙКА ====================
     const firebaseConfig = {
         apiKey: "AIzaSyCJ6ifAEU1wJOGq_gVnm8WqN-Nm2T4mmz8",
         authDomain: "realwalletprofit-e6eef.firebaseapp.com",
-        databaseURL: "https://realwalletprofit-e6eef-default-rtdb.firebaseio.com", // <-- замените на свой URL
+        databaseURL: "https://realwalletprofit-e6eef-default-rtdb.firebaseio.com", // замените при необходимости
         projectId: "realwalletprofit-e6eef",
         storageBucket: "realwalletprofit-e6eef.firebasestorage.app",
         messagingSenderId: "1061048218158",
@@ -344,36 +366,17 @@
         measurementId: "G-G6T7DECKML"
     };
 
-    // Инициализация Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Получаем ID пользователя Telegram
-    const user = tg.initDataUnsafe?.user;
-    const userId = user ? String(user.id) : null;
-
-    console.log('Telegram user:', user);
-    console.log('userId:', userId);
-
-    if (!userId) {
-        tg.showAlert('Ошибка: не удалось определить пользователя Telegram. Данные не будут синхронизироваться.');
-    }
-
     // Ссылка на данные пользователя в Realtime Database
-    const userPortfolioRef = userId ? db.ref(`portfolios/${userId}`) : null;
+    const userPortfolioRef = db.ref(`portfolios/${userId}`);
 
     let myPortfolio = [];
     let isLoading = true;
 
     // --- Загрузка портфеля ---
     async function loadPortfolio() {
-        if (!userPortfolioRef) {
-            console.warn('Нет userPortfolioRef, userId отсутствует');
-            isLoading = false;
-            updatePortfolio();
-            return;
-        }
-
         try {
             console.log('Загружаем данные из Realtime Database...');
             const snapshot = await userPortfolioRef.once('value');
@@ -390,7 +393,9 @@
             updatePortfolio();
         } catch (error) {
             console.error('Ошибка загрузки портфеля:', error);
-            tg.showAlert('Не удалось загрузить данные. Проверьте интернет и настройки Firebase.');
+            try {
+                tg.showAlert('Не удалось загрузить данные. Проверьте интернет и настройки Firebase.');
+            } catch(e) {}
             isLoading = false;
             updatePortfolio();
         }
@@ -398,7 +403,6 @@
 
     // --- Сохранение портфеля ---
     async function savePortfolio() {
-        if (!userPortfolioRef) return;
         if (isLoading) {
             console.log('Сохранение отложено, данные ещё загружаются');
             return;
@@ -408,7 +412,9 @@
             console.log('Портфель сохранён');
         } catch (error) {
             console.error('Ошибка сохранения портфеля:', error);
-            tg.showAlert('Не удалось сохранить данные. Изменения могут быть потеряны.');
+            try {
+                tg.showAlert('Не удалось сохранить данные. Изменения могут быть потеряны.');
+            } catch(e) {}
         }
     }
 
@@ -449,7 +455,6 @@
     ];
 
     // --- Логика работы с портфелем ---
-
     function addOrUpdateAsset(assetId, amountDelta, investedDelta) {
         const existing = myPortfolio.find(a => a.id === assetId);
         const now = new Date().toLocaleString();
@@ -582,7 +587,9 @@
 
         } catch (err) {
             console.error(err);
-            tg.showAlert('Ошибка загрузки цен. Проверьте интернет.');
+            try {
+                tg.showAlert('Ошибка загрузки цен. Проверьте интернет.');
+            } catch(e) {}
         }
     }
 
@@ -655,13 +662,17 @@
 
     document.getElementById('saveAssetBtn').addEventListener('click', () => {
         if (!selectedAsset) {
-            tg.showAlert('Выберите актив из списка');
+            try {
+                tg.showAlert('Выберите актив из списка');
+            } catch(e) { alert('Выберите актив из списка'); }
             return;
         }
         const amount = parseFloat(document.getElementById('coinAmountInput').value);
         const spent = parseFloat(document.getElementById('coinSpentInput').value);
         if (isNaN(amount) || isNaN(spent) || amount <= 0 || spent <= 0) {
-            tg.showAlert('Введите корректные значения');
+            try {
+                tg.showAlert('Введите корректные значения');
+            } catch(e) { alert('Введите корректные значения'); }
             return;
         }
         if (isEditMode && editingAssetId) {
@@ -728,7 +739,7 @@
             buttonRootId: 'ton-connect-button'
         });
         tonConnectUI.onStatusChange(wallet => {
-            if (wallet) tg.showAlert('Кошелек подключен');
+            if (wallet) try { tg.showAlert('Кошелек подключен'); } catch(e) { alert('Кошелек подключен'); }
         });
     } catch(e) { console.log(e); }
 
