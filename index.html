@@ -3,64 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-    <title>RealWalletProfit</title>
+    <title>RealWalletProfit | Элитный портфель</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
-    
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color, #ffffff);
-            color: var(--text-color, #000000);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color, #0a0a0a);
+            color: var(--text-color, #ffffff);
             padding: 20px 16px 40px;
             min-height: 100vh;
-            transition: background-color 0.2s, color 0.2s;
+            transition: background-color 0.3s, color 0.3s;
         }
-        /* Тема по умолчанию (светлая) */
         body.light {
-            --bg-color: #ffffff;
-            --secondary-bg: #f8f8f8;
-            --text-color: #000000;
-            --hint-color: #8e8e93;
-            --separator-color: rgba(0,0,0,0.05);
-            --button-bg: #2a7f6e;
+            --bg-color: #f5f7fa;
+            --secondary-bg: #ffffff;
+            --text-color: #1e293b;
+            --hint-color: #64748b;
+            --separator-color: rgba(0,0,0,0.08);
+            --button-bg: #0f172a;
             --button-text: #ffffff;
+            --card-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.02);
         }
         body.dark {
-            --bg-color: #1c1c1e;
-            --secondary-bg: #2c2c2e;
-            --text-color: #ffffff;
-            --hint-color: #8e8e93;
+            --bg-color: #0f172a;
+            --secondary-bg: #1e293b;
+            --text-color: #f1f5f9;
+            --hint-color: #94a3b8;
             --separator-color: rgba(255,255,255,0.1);
-            --button-bg: #2a7f6e;
+            --button-bg: #2d3a5e;
             --button-text: #ffffff;
+            --card-shadow: 0 10px 25px -5px rgba(0,0,0,0.3), 0 8px 10px -6px rgba(0,0,0,0.2);
         }
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
         }
 
-        .container { max-width: 500px; margin: 0 auto; }
+        .container { max-width: 520px; margin: 0 auto; }
         
         .app-header { 
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
-            margin-bottom: 24px; 
-            position: relative;
+            margin-bottom: 32px;
         }
         .app-title h1 {
-            font-size: 24px; font-weight: 700;
-            background: linear-gradient(135deg, #2a7f6e, #4c9f8f);
+            font-size: 28px; font-weight: 800;
+            background: linear-gradient(135deg, #c084fc, #60a5fa);
             -webkit-background-clip: text; color: transparent;
+            letter-spacing: -0.5px;
         }
-        .app-title p { font-size: 13px; color: var(--hint-color); }
-        
+        .app-title p { font-size: 13px; color: var(--hint-color); margin-top: 4px; }
+
         .theme-toggle {
             background: var(--secondary-bg);
             border: none;
-            border-radius: 30px;
+            border-radius: 40px;
             width: 44px;
             height: 44px;
             display: flex;
@@ -68,111 +68,190 @@
             justify-content: center;
             cursor: pointer;
             font-size: 22px;
-            transition: background 0.2s;
+            transition: all 0.2s;
             color: var(--text-color);
-        }
-        .theme-toggle:hover {
-            opacity: 0.8;
+            box-shadow: var(--card-shadow);
         }
 
-        #ton-connect-button { display: flex; justify-content: flex-end; margin-left: 12px; }
+        #ton-connect-button { margin-left: 12px; }
 
         .balance-card {
-            background-color: var(--secondary-bg);
-            border-radius: 24px; padding: 24px 20px; margin-bottom: 20px; text-align: center;
+            background: var(--secondary-bg);
+            border-radius: 32px;
+            padding: 28px 24px;
+            margin-bottom: 28px;
+            text-align: center;
+            box-shadow: var(--card-shadow);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.05);
         }
-        .balance-label { font-size: 14px; color: var(--hint-color); margin-bottom: 8px; text-transform: uppercase;}
-        .balance-amount { font-size: 42px; font-weight: 800; line-height: 1.2; }
+        .balance-label { font-size: 14px; color: var(--hint-color); letter-spacing: 1px; margin-bottom: 12px; text-transform: uppercase; font-weight: 500;}
+        .balance-amount { font-size: 48px; font-weight: 800; letter-spacing: -1px; line-height: 1.1; }
         
         .profit-badge {
-            display: inline-block; padding: 6px 12px; border-radius: 12px;
-            font-size: 16px; font-weight: 600; margin-top: 10px;
+            display: inline-block; padding: 8px 16px; border-radius: 40px;
+            font-size: 14px; font-weight: 600; margin-top: 16px;
         }
-        .positive { background-color: rgba(52, 199, 89, 0.15); color: #34c759; }
-        .negative { background-color: rgba(255, 59, 48, 0.15); color: #ff3b30; }
+        .positive { background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(34,197,94,0.05)); color: #22c55e; }
+        .negative { background: linear-gradient(135deg, rgba(239,68,68,0.2), rgba(239,68,68,0.05)); color: #ef4444; }
 
-        .assets-header { font-size: 18px; font-weight: 600; margin-bottom: 16px; margin-top: 20px; display: flex; justify-content: space-between;}
+        .assets-header { font-size: 20px; font-weight: 700; margin-bottom: 20px; margin-top: 8px; letter-spacing: -0.3px; display: flex; justify-content: space-between; align-items: baseline;}
         
         .asset-list {
-            background-color: var(--secondary-bg);
-            border-radius: 20px; overflow: hidden; margin-bottom: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 32px;
         }
-        .asset-item {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 16px; border-bottom: 1px solid var(--separator-color);
+        .asset-card {
+            background: var(--secondary-bg);
+            border-radius: 24px;
+            padding: 16px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(255,255,255,0.05);
         }
-        .asset-item:last-child { border-bottom: none; }
-        
-        .asset-info { display: flex; flex-direction: column; gap: 4px; flex: 1; }
-        .asset-name { font-weight: 600; font-size: 16px; text-transform: uppercase; }
-        .asset-details { font-size: 13px; color: var(--hint-color); display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
-        
-        .asset-financials { text-align: right; display: flex; flex-direction: column; gap: 4px; }
-        .asset-value { font-weight: 600; font-size: 16px; }
-        .asset-pnl { font-size: 13px; font-weight: 500;}
-        .pnl-pos { color: #34c759; }
-        .pnl-neg { color: #ff3b30; }
+        .asset-card:hover {
+            transform: translateY(-2px);
+        }
+        .asset-main {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .asset-name {
+            font-weight: 700;
+            font-size: 18px;
+            letter-spacing: -0.3px;
+            background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+        .asset-value {
+            font-weight: 700;
+            font-size: 18px;
+        }
+        .asset-details {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+            font-size: 13px;
+            color: var(--hint-color);
+        }
+        .asset-pnl {
+            font-weight: 600;
+            font-size: 13px;
+        }
+        .pnl-pos { color: #22c55e; }
+        .pnl-neg { color: #ef4444; }
 
         .btn {
-            width: 100%; background-color: var(--button-bg);
-            color: var(--button-text);
-            border: none; border-radius: 14px; padding: 14px 12px;
-            font-size: 16px; font-weight: 600; cursor: pointer;
+            width: 100%;
+            background: linear-gradient(135deg, #3b82f6, #6366f1);
+            color: white;
+            border: none;
+            border-radius: 40px;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
+        .btn:active { transform: scale(0.98); }
 
-        /* Модальное окно */
+        /* Модалки */
         .modal-overlay {
-            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5); z-index: 100; justify-content: center; align-items: flex-end;
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+            z-index: 200;
+            justify-content: center;
+            align-items: flex-end;
         }
         .modal-content {
-            background-color: var(--bg-color); width: 100%;
-            border-radius: 24px 24px 0 0; padding: 24px 20px; padding-bottom: 40px;
+            background: var(--secondary-bg);
+            width: 100%;
+            border-radius: 32px 32px 0 0;
+            padding: 28px 24px 40px;
+            max-height: 90vh;
+            overflow-y: auto;
         }
-        .modal-title { font-size: 20px; font-weight: 600; margin-bottom: 16px; }
-        .input-group { margin-bottom: 16px; }
-        .input-group label { display: block; font-size: 14px; color: var(--hint-color); margin-bottom: 8px; }
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            letter-spacing: -0.5px;
+        }
+        .input-group { margin-bottom: 20px; }
+        .input-group label {
+            display: block;
+            font-size: 14px;
+            color: var(--hint-color);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
         .input-group input {
-            width: 100%; padding: 14px; border-radius: 12px;
+            width: 100%;
+            padding: 14px;
+            border-radius: 20px;
             border: 1px solid var(--separator-color);
-            background-color: var(--secondary-bg);
-            color: var(--text-color); font-size: 16px; outline: none;
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-size: 16px;
+            outline: none;
         }
-        .autocomplete-container {
-            position: relative;
-        }
+        .autocomplete-container { position: relative; }
         .autocomplete-suggestions {
             position: absolute;
             top: 100%;
             left: 0;
             right: 0;
-            background-color: var(--bg-color);
-            border: 1px solid var(--separator-color);
-            border-radius: 12px;
+            background: var(--secondary-bg);
+            border-radius: 20px;
             max-height: 200px;
             overflow-y: auto;
             z-index: 10;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: var(--card-shadow);
         }
         .autocomplete-suggestion {
-            padding: 12px 14px;
+            padding: 12px 16px;
             cursor: pointer;
             border-bottom: 1px solid var(--separator-color);
         }
-        .autocomplete-suggestion:last-child {
-            border-bottom: none;
+        .autocomplete-suggestion:hover { background: var(--button-bg); color: white; }
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 28px;
         }
-        .autocomplete-suggestion:hover {
-            background-color: var(--button-bg);
-            color: var(--button-text);
+        .btn-cancel {
+            background: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--separator-color);
         }
-        .modal-buttons { display: flex; gap: 12px; margin-top: 24px; }
-        .btn-cancel { background-color: var(--secondary-bg); color: var(--text-color); }
-
-        /* Адаптив */
-        @media (max-width: 480px) {
-            body { padding: 16px 12px 40px; }
-            .balance-amount { font-size: 36px; }
+        .history-list {
+            margin-top: 20px;
+            border-top: 1px solid var(--separator-color);
+            padding-top: 16px;
+        }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--separator-color);
+            font-size: 14px;
+        }
+        .history-date { color: var(--hint-color); }
+        .delete-btn {
+            background: #ef4444;
+            margin-top: 16px;
         }
     </style>
 </head>
@@ -181,81 +260,94 @@
     <div class="app-header">
         <div class="app-title">
             <h1>RealWalletProfit</h1>
-            <p>Истинный PnL</p>
+            <p>Удобный трекинг окупаемости портфеля</p>
         </div>
-        <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="display: flex; gap: 12px;">
             <button id="themeToggleBtn" class="theme-toggle">🌙</button>
             <div id="ton-connect-button"></div>
         </div>
     </div>
 
     <div class="balance-card">
-        <div class="balance-label">Текущий баланс</div>
+        <div class="balance-label">Общая стоимость портфеля</div>
         <div class="balance-amount" id="totalBalance">$0.00</div>
         <div class="profit-badge" id="totalProfit">Загрузка...</div>
     </div>
 
     <div class="assets-header">
-        <span>Мой портфель</span>
+        <span>Активы</span>
     </div>
-    <div class="asset-list" id="assetList">
-        <div style="padding: 16px; text-align: center; color: gray;">Загрузка активов...</div>
-    </div>
+    <div class="asset-list" id="assetList"></div>
 
-    <button class="btn" id="openModalBtn">➕ Добавить актив вручную</button>
+    <button class="btn" id="openModalBtn">➕ Добавить актив</button>
 </div>
 
+<!-- Модалка добавления/редактирования -->
 <div class="modal-overlay" id="addModal">
     <div class="modal-content">
-        <div class="modal-title">Новый актив</div>
-        
+        <div class="modal-title" id="modalTitle">Новый актив</div>
         <div class="input-group">
             <label>Поиск актива</label>
             <div class="autocomplete-container">
-                <input type="text" id="assetSearchInput" placeholder="Введите название (например, золото, bitcoin)" autocomplete="off">
+                <input type="text" id="assetSearchInput" placeholder="Bitcoin, Ethereum, TON..." autocomplete="off">
                 <div id="suggestionsList" class="autocomplete-suggestions" style="display: none;"></div>
             </div>
         </div>
-        
         <div class="input-group">
-            <label>Количество монет</label>
-            <input type="number" id="coinAmountInput" placeholder="0.5" step="any">
+            <label>Количество</label>
+            <input type="number" id="coinAmountInput" placeholder="0.00" step="any">
         </div>
-
         <div class="input-group">
-            <label>Всего потрачено ($ USD)</label>
-            <input type="number" id="coinSpentInput" placeholder="1000" step="any">
+            <label>Всего потрачено ($)</label>
+            <input type="number" id="coinSpentInput" placeholder="0.00" step="any">
         </div>
-
         <div class="modal-buttons">
             <button class="btn btn-cancel" id="closeModalBtn">Отмена</button>
-            <button class="btn" id="saveAssetBtn">Добавить</button>
+            <button class="btn" id="saveAssetBtn">Сохранить</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модалка деталей и истории -->
+<div class="modal-overlay" id="detailModal">
+    <div class="modal-content">
+        <div class="modal-title" id="detailTitle"></div>
+        <div id="detailContent"></div>
+        <div class="history-list" id="historyList"></div>
+        <div class="modal-buttons" style="margin-top: 20px;">
+            <button class="btn btn-cancel" id="closeDetailBtn">Закрыть</button>
+            <button class="btn" id="editAssetBtn">Редактировать</button>
+            <button class="btn delete-btn" id="deleteAssetBtn">Удалить актив</button>
         </div>
     </div>
 </div>
 
 <script>
-    // ---------- Предопределённый список активов с ключевыми словами (добавлены ADI, Monad) ----------
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+
+    // --- Каталог активов (с ADI и Monad) ---
     const assetsCatalog = [
-        { id: "bitcoin", name: "Bitcoin (BTC)", keywords: ["bitcoin", "btc", "биткоин", "биткойн"] },
-        { id: "ethereum", name: "Ethereum (ETH)", keywords: ["ethereum", "eth", "эфириум", "эфир"] },
-        { id: "the-open-network", name: "TON (Toncoin)", keywords: ["ton", "toncoin", "the open network", "тон"] },
-        { id: "solana", name: "Solana (SOL)", keywords: ["solana", "sol", "солана"] },
-        { id: "binancecoin", name: "BNB", keywords: ["bnb", "binance coin", "бинанс"] },
-        { id: "ripple", name: "XRP", keywords: ["xrp", "ripple", "рипл"] },
-        { id: "dogecoin", name: "Dogecoin (DOGE)", keywords: ["dogecoin", "doge", "доге", "додж"] },
-        { id: "cardano", name: "Cardano (ADA)", keywords: ["cardano", "ada", "кардано"] },
+        { id: "bitcoin", name: "Bitcoin (BTC)", keywords: ["bitcoin", "btc", "биткоин"] },
+        { id: "ethereum", name: "Ethereum (ETH)", keywords: ["ethereum", "eth", "эфир"] },
+        { id: "the-open-network", name: "TON (Toncoin)", keywords: ["ton", "toncoin", "тон"] },
+        { id: "solana", name: "Solana (SOL)", keywords: ["solana", "sol"] },
+        { id: "binancecoin", name: "BNB", keywords: ["bnb", "binance"] },
+        { id: "ripple", name: "XRP", keywords: ["xrp", "ripple"] },
+        { id: "dogecoin", name: "Dogecoin (DOGE)", keywords: ["dogecoin", "doge"] },
+        { id: "cardano", name: "Cardano (ADA)", keywords: ["cardano", "ada"] },
         { id: "avalanche-2", name: "Avalanche (AVAX)", keywords: ["avalanche", "avax"] },
-        { id: "polygon-ecosystem-token", name: "Polygon (MATIC)", keywords: ["polygon", "matic", "полигон"] },
-        { id: "chainlink", name: "Chainlink (LINK)", keywords: ["chainlink", "link", "чейнлинк"] },
+        { id: "polygon-ecosystem-token", name: "Polygon (MATIC)", keywords: ["polygon", "matic"] },
+        { id: "chainlink", name: "Chainlink (LINK)", keywords: ["chainlink", "link"] },
         { id: "uniswap", name: "Uniswap (UNI)", keywords: ["uniswap", "uni"] },
-        { id: "litecoin", name: "Litecoin (LTC)", keywords: ["litecoin", "ltc", "лайткоин"] },
-        { id: "tether", name: "Tether (USDT)", keywords: ["tether", "usdt", "тезер"] },
-        { id: "usd-coin", name: "USD Coin (USDC)", keywords: ["usdc", "usd coin"] },
-        { id: "tether-gold", name: "Tether Gold (XAUt)", keywords: ["tether gold", "xaut", "золото", "gold", "xaute", "tether gold"] },
+        { id: "litecoin", name: "Litecoin (LTC)", keywords: ["litecoin", "ltc"] },
+        { id: "tether", name: "Tether (USDT)", keywords: ["tether", "usdt"] },
+        { id: "usd-coin", name: "USD Coin (USDC)", keywords: ["usdc"] },
+        { id: "tether-gold", name: "Tether Gold (XAUt)", keywords: ["tether gold", "xaut", "золото", "gold"] },
         { id: "stellar", name: "Stellar (XLM)", keywords: ["stellar", "xlm"] },
         { id: "cosmos", name: "Cosmos (ATOM)", keywords: ["cosmos", "atom"] },
-        { id: "near", name: "NEAR Protocol (NEAR)", keywords: ["near", "near protocol"] },
+        { id: "near", name: "NEAR Protocol (NEAR)", keywords: ["near"] },
         { id: "algorand", name: "Algorand (ALGO)", keywords: ["algorand", "algo"] },
         { id: "filecoin", name: "Filecoin (FIL)", keywords: ["filecoin", "fil"] },
         { id: "theta-token", name: "Theta (THETA)", keywords: ["theta"] },
@@ -267,220 +359,321 @@
         { id: "compound-governance-token", name: "Compound (COMP)", keywords: ["compound", "comp"] },
         { id: "yearn-finance", name: "Yearn.finance (YFI)", keywords: ["yearn", "yfi"] },
         { id: "pancakeswap-token", name: "PancakeSwap (CAKE)", keywords: ["pancake", "cake"] },
-        // Новые активы
         { id: "adi", name: "ADI (ADI)", keywords: ["adi", "adi token"] },
         { id: "monad", name: "Monad (MON)", keywords: ["monad", "mon"] }
     ];
 
-    // ---------- Инициализация Telegram и темы ----------
-    const tg = window.Telegram.WebApp;
-    tg.ready();
-    tg.expand();
-
-    // Управление темой
-    let currentTheme = localStorage.getItem('theme') || 'light'; // 'light' или 'dark'
-    function applyTheme(theme) {
-        document.body.className = theme;
-        const btn = document.getElementById('themeToggleBtn');
-        if (theme === 'dark') {
-            btn.innerHTML = '☀️';
-        } else {
-            btn.innerHTML = '🌙';
-        }
-        localStorage.setItem('theme', theme);
-    }
-    // Синхронизация с Telegram (если нужно переопределить)
-    if (tg.themeParams && tg.themeParams.bg_color) {
-        // Если Telegram передал тему, можно использовать, но для простоты оставляем пользовательский выбор
-        // currentTheme = tg.colorScheme === 'dark' ? 'dark' : 'light';
-        // applyTheme(currentTheme);
-    }
-    applyTheme(currentTheme);
-
-    document.getElementById('themeToggleBtn').addEventListener('click', () => {
-        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-        currentTheme = newTheme;
-        applyTheme(currentTheme);
-    });
-
-    // ---------- TON Connect (тестовая заглушка) ----------
-    const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-        manifestUrl: 'https://ton-connect.github.io/demo-dapp-with-react-ui/tonconnect-manifest.json',
-        buttonRootId: 'ton-connect-button'
-    });
-    tonConnectUI.onStatusChange(wallet => {
-        if (wallet) {
-            console.log('Кошелек подключен:', wallet.account.address);
-            tg.showAlert('TON Кошелек успешно подключен! (Чтение баланса добавим позже)');
-        }
-    });
-
-    // ---------- Портфель ----------
+    // --- Структура портфеля: { id, amount, investedUSD, history: [{date, amountDelta, investedDelta}] } ---
     let myPortfolio = JSON.parse(localStorage.getItem('userPortfolio')) || [];
-    let selectedAsset = null;
 
+    // Функция сохранения
+    function savePortfolio() {
+        localStorage.setItem('userPortfolio', JSON.stringify(myPortfolio));
+    }
+
+    // Добавление/объединение актива
+    function addOrUpdateAsset(assetId, amountDelta, investedDelta) {
+        const existing = myPortfolio.find(a => a.id === assetId);
+        const now = new Date().toLocaleString();
+        if (existing) {
+            existing.amount += amountDelta;
+            existing.investedUSD += investedDelta;
+            existing.history.push({
+                date: now,
+                amountDelta: amountDelta,
+                investedDelta: investedDelta,
+                type: 'add'
+            });
+        } else {
+            myPortfolio.push({
+                id: assetId,
+                amount: amountDelta,
+                investedUSD: investedDelta,
+                history: [{
+                    date: now,
+                    amountDelta: amountDelta,
+                    investedDelta: investedDelta,
+                    type: 'add'
+                }]
+            });
+        }
+        savePortfolio();
+        updatePortfolio();
+    }
+
+    // Удаление актива
+    function deleteAsset(assetId) {
+        myPortfolio = myPortfolio.filter(a => a.id !== assetId);
+        savePortfolio();
+        updatePortfolio();
+        closeDetailModal();
+    }
+
+    // Редактирование: заменить количество и сумму, добавив запись в историю
+    function editAsset(assetId, newAmount, newInvested) {
+        const asset = myPortfolio.find(a => a.id === assetId);
+        if (asset) {
+            const oldAmount = asset.amount;
+            const oldInvested = asset.investedUSD;
+            const amountDelta = newAmount - oldAmount;
+            const investedDelta = newInvested - oldInvested;
+            asset.amount = newAmount;
+            asset.investedUSD = newInvested;
+            asset.history.push({
+                date: new Date().toLocaleString(),
+                amountDelta: amountDelta,
+                investedDelta: investedDelta,
+                type: 'edit'
+            });
+            savePortfolio();
+            updatePortfolio();
+        }
+    }
+
+    // Форматирование денег
     const formatMoney = (amount) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 
+    // Обновление главного экрана
     async function updatePortfolio() {
         const assetListEl = document.getElementById('assetList');
-        
-        if (myPortfolio.length === 0) {
-            assetListEl.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--hint-color);">Ваш портфель пуст. Добавьте активы!</div>';
+        if (!myPortfolio.length) {
+            assetListEl.innerHTML = '<div style="text-align: center; padding: 32px; color: var(--hint-color);">Портфель пуст. Добавьте активы ➕</div>';
             document.getElementById('totalBalance').innerText = '$0.00';
             document.getElementById('totalProfit').innerText = 'Нет данных';
-            document.getElementById('totalProfit').className = 'profit-badge';
             return;
         }
 
         try {
-            const coinIds = myPortfolio.map(coin => coin.id).join(',');
-            const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coinIds}&vs_currencies=usd`);
-            const prices = await response.json();
+            const ids = myPortfolio.map(a => a.id).join(',');
+            const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`);
+            const prices = await res.json();
 
-            let totalCurrentValue = 0;
-            let totalInvestedValue = 0;
-            assetListEl.innerHTML = ''; 
+            let totalCurrent = 0;
+            let totalInvested = 0;
+            let html = '';
 
-            myPortfolio.forEach(coin => {
-                const currentPrice = prices[coin.id] ? prices[coin.id].usd : 0;
-                const currentValue = coin.amount * currentPrice;
-                const investedValue = coin.investedUSD;
-                
-                const pnlUSD = currentValue - investedValue;
-                totalCurrentValue += currentValue;
-                totalInvestedValue += investedValue;
+            myPortfolio.forEach(asset => {
+                const price = prices[asset.id]?.usd || 0;
+                const currentValue = asset.amount * price;
+                totalCurrent += currentValue;
+                totalInvested += asset.investedUSD;
+                const pnl = currentValue - asset.investedUSD;
+                const pnlClass = pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
+                const pnlSign = pnl >= 0 ? '+' : '';
+                const assetInfo = assetsCatalog.find(c => c.id === asset.id);
+                const displayName = assetInfo ? assetInfo.name : asset.id.toUpperCase();
 
-                const pnlClass = pnlUSD >= 0 ? 'pnl-pos' : 'pnl-neg';
-                const pnlSign = pnlUSD >= 0 ? '+' : '';
-                
-                const assetInfo = assetsCatalog.find(a => a.id === coin.id);
-                const displayName = assetInfo ? assetInfo.name : coin.id.replace(/-/g, ' ').toUpperCase();
-                
-                assetListEl.innerHTML += `
-                    <div class="asset-item">
-                        <div class="asset-info">
+                html += `
+                    <div class="asset-card" data-id="${asset.id}">
+                        <div class="asset-main">
                             <span class="asset-name">${displayName}</span>
-                            <div class="asset-details">
-                                <span>${coin.amount} шт.</span>
-                                <span>${formatMoney(currentValue)}</span>
-                            </div>
-                        </div>
-                        <div class="asset-financials">
                             <span class="asset-value">${formatMoney(currentValue)}</span>
-                            <span class="asset-pnl ${pnlClass}">${pnlSign}${formatMoney(pnlUSD)}</span>
                         </div>
+                        <div class="asset-details">
+                            <span>${asset.amount} шт.</span>
+                            <span>цена: ${formatMoney(price)}</span>
+                        </div>
+                        <div class="asset-pnl ${pnlClass}" style="margin-top: 8px;">${pnlSign}${formatMoney(pnl)}</div>
                     </div>
                 `;
             });
 
-            document.getElementById('totalBalance').innerText = formatMoney(totalCurrentValue);
-            
-            const totalPnL = totalCurrentValue - totalInvestedValue;
-            const totalProfitEl = document.getElementById('totalProfit');
-            
+            assetListEl.innerHTML = html;
+            document.getElementById('totalBalance').innerText = formatMoney(totalCurrent);
+            const totalPnL = totalCurrent - totalInvested;
+            const profitEl = document.getElementById('totalProfit');
             if (totalPnL >= 0) {
-                totalProfitEl.className = 'profit-badge positive';
-                totalProfitEl.innerText = `+${formatMoney(totalPnL)} чистой прибыли`;
+                profitEl.className = 'profit-badge positive';
+                profitEl.innerText = `+${formatMoney(totalPnL)} чистой прибыли`;
             } else {
-                totalProfitEl.className = 'profit-badge negative';
-                totalProfitEl.innerText = `${formatMoney(totalPnL)} убытка`;
+                profitEl.className = 'profit-badge negative';
+                profitEl.innerText = `${formatMoney(totalPnL)} убытка`;
             }
 
-        } catch (error) {
-            console.error('Ошибка API:', error);
-            tg.showAlert('Ошибка загрузки курсов.');
+            // Вешаем обработчики на карточки
+            document.querySelectorAll('.asset-card').forEach(card => {
+                card.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = card.getAttribute('data-id');
+                    showAssetDetails(id);
+                });
+            });
+
+        } catch (err) {
+            console.error(err);
+            tg.showAlert('Ошибка загрузки цен. Проверьте интернет.');
         }
     }
 
-    // ---------- Автодополнение ----------
+    // Показать детали актива и историю
+    function showAssetDetails(assetId) {
+        const asset = myPortfolio.find(a => a.id === assetId);
+        if (!asset) return;
+        const assetInfo = assetsCatalog.find(c => c.id === assetId);
+        const displayName = assetInfo ? assetInfo.name : assetId.toUpperCase();
+        document.getElementById('detailTitle').innerText = displayName;
+        
+        let historyHtml = '<h4 style="margin-bottom: 12px;">История операций</h4>';
+        if (asset.history && asset.history.length) {
+            asset.history.slice().reverse().forEach(h => {
+                const sign = h.amountDelta >= 0 ? '+' : '';
+                historyHtml += `
+                    <div class="history-item">
+                        <div>${h.date}</div>
+                        <div>${sign}${h.amountDelta} шт. ($${Math.abs(h.investedDelta).toFixed(2)})</div>
+                    </div>
+                `;
+            });
+        } else {
+            historyHtml += '<div class="history-item">Нет операций</div>';
+        }
+        document.getElementById('historyList').innerHTML = historyHtml;
+
+        // Временно сохраняем id для редактирования/удаления
+        window.currentAssetId = assetId;
+        document.getElementById('detailModal').style.display = 'flex';
+    }
+
+    function closeDetailModal() {
+        document.getElementById('detailModal').style.display = 'none';
+    }
+
+    // Модалка добавления/редактирования
+    const addModal = document.getElementById('addModal');
+    let isEditMode = false;
+    let editingAssetId = null;
+
+    function openAddModal(editId = null) {
+        if (editId) {
+            isEditMode = true;
+            editingAssetId = editId;
+            const asset = myPortfolio.find(a => a.id === editId);
+            if (asset) {
+                const assetInfo = assetsCatalog.find(c => c.id === editId);
+                document.getElementById('modalTitle').innerText = 'Редактировать актив';
+                document.getElementById('assetSearchInput').value = assetInfo ? assetInfo.name : editId;
+                document.getElementById('coinAmountInput').value = asset.amount;
+                document.getElementById('coinSpentInput').value = asset.investedUSD;
+                selectedAsset = assetInfo;
+            }
+        } else {
+            isEditMode = false;
+            editingAssetId = null;
+            document.getElementById('modalTitle').innerText = 'Новый актив';
+            document.getElementById('assetSearchInput').value = '';
+            document.getElementById('coinAmountInput').value = '';
+            document.getElementById('coinSpentInput').value = '';
+            selectedAsset = null;
+        }
+        addModal.style.display = 'flex';
+    }
+
+    function closeAddModal() {
+        addModal.style.display = 'none';
+        isEditMode = false;
+        editingAssetId = null;
+        selectedAsset = null;
+    }
+
+    // Обработка сохранения
+    document.getElementById('saveAssetBtn').addEventListener('click', () => {
+        if (!selectedAsset) {
+            tg.showAlert('Выберите актив из списка');
+            return;
+        }
+        const amount = parseFloat(document.getElementById('coinAmountInput').value);
+        const spent = parseFloat(document.getElementById('coinSpentInput').value);
+        if (isNaN(amount) || isNaN(spent) || amount <= 0 || spent <= 0) {
+            tg.showAlert('Введите корректные значения');
+            return;
+        }
+        if (isEditMode && editingAssetId) {
+            editAsset(editingAssetId, amount, spent);
+        } else {
+            addOrUpdateAsset(selectedAsset.id, amount, spent);
+        }
+        closeAddModal();
+    });
+
+    // --- Автодополнение ---
+    let selectedAsset = null;
     const searchInput = document.getElementById('assetSearchInput');
     const suggestionsBox = document.getElementById('suggestionsList');
 
     function filterAssets(query) {
         if (!query.trim()) return [];
-        const lowerQuery = query.toLowerCase();
-        return assetsCatalog.filter(asset => 
-            asset.name.toLowerCase().includes(lowerQuery) ||
-            asset.keywords.some(kw => kw.toLowerCase().includes(lowerQuery))
-        );
+        const lower = query.toLowerCase();
+        return assetsCatalog.filter(a => a.name.toLowerCase().includes(lower) || a.keywords.some(k => k.includes(lower)));
     }
 
-    function showSuggestions(suggestions) {
-        if (suggestions.length === 0) {
-            suggestionsBox.style.display = 'none';
-            return;
-        }
+    function showSuggestions(list) {
+        if (!list.length) { suggestionsBox.style.display = 'none'; return; }
         suggestionsBox.innerHTML = '';
-        suggestions.forEach(asset => {
+        list.forEach(asset => {
             const div = document.createElement('div');
             div.className = 'autocomplete-suggestion';
             div.textContent = asset.name;
-            div.addEventListener('click', () => {
-                selectAsset(asset);
-            });
+            div.onclick = () => {
+                selectedAsset = asset;
+                searchInput.value = asset.name;
+                suggestionsBox.style.display = 'none';
+            };
             suggestionsBox.appendChild(div);
         });
         suggestionsBox.style.display = 'block';
     }
 
-    function selectAsset(asset) {
-        selectedAsset = asset;
-        searchInput.value = asset.name;
-        suggestionsBox.style.display = 'none';
-    }
-
     searchInput.addEventListener('input', (e) => {
-        const query = e.target.value;
-        const suggestions = filterAssets(query);
-        showSuggestions(suggestions);
+        const q = e.target.value;
+        const filtered = filterAssets(q);
+        showSuggestions(filtered);
     });
-
     document.addEventListener('click', (e) => {
         if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
             suggestionsBox.style.display = 'none';
         }
     });
 
-    // ---------- Модальное окно ----------
-    const modal = document.getElementById('addModal');
-    document.getElementById('openModalBtn').addEventListener('click', () => {
-        selectedAsset = null;
-        searchInput.value = '';
-        document.getElementById('coinAmountInput').value = '';
-        document.getElementById('coinSpentInput').value = '';
-        modal.style.display = 'flex';
+    // --- Темная/светлая ---
+    let currentTheme = localStorage.getItem('theme') || 'dark';
+    function applyTheme(theme) {
+        document.body.className = theme;
+        document.getElementById('themeToggleBtn').innerHTML = theme === 'dark' ? '☀️' : '🌙';
+        localStorage.setItem('theme', theme);
+        currentTheme = theme;
+    }
+    applyTheme(currentTheme);
+    document.getElementById('themeToggleBtn').addEventListener('click', () => {
+        applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
     });
-    
-    document.getElementById('closeModalBtn').addEventListener('click', () => {
-        modal.style.display = 'none';
-    });
 
-    document.getElementById('saveAssetBtn').addEventListener('click', () => {
-        if (!selectedAsset) {
-            tg.showAlert('Пожалуйста, выберите актив из списка.');
-            return;
-        }
-        const amount = parseFloat(document.getElementById('coinAmountInput').value);
-        const spent = parseFloat(document.getElementById('coinSpentInput').value);
-
-        if (isNaN(amount) || isNaN(spent) || amount <= 0 || spent <= 0) {
-            tg.showAlert('Пожалуйста, укажите корректное количество и сумму вложений.');
-            return;
-        }
-
-        myPortfolio.push({
-            id: selectedAsset.id,
-            amount: amount,
-            investedUSD: spent
+    // --- TON Connect заглушка ---
+    try {
+        const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+            manifestUrl: 'https://ton-connect.github.io/demo-dapp-with-react-ui/tonconnect-manifest.json',
+            buttonRootId: 'ton-connect-button'
         });
-        
-        localStorage.setItem('userPortfolio', JSON.stringify(myPortfolio));
-        
-        modal.style.display = 'none';
-        updatePortfolio();
-    });
+        tonConnectUI.onStatusChange(wallet => {
+            if (wallet) tg.showAlert('Кошелек подключен');
+        });
+    } catch(e) { console.log(e); }
 
-    // Первый запуск
+    // --- События ---
+    document.getElementById('openModalBtn').onclick = () => openAddModal();
+    document.getElementById('closeModalBtn').onclick = closeAddModal;
+    document.getElementById('closeDetailBtn').onclick = closeDetailModal;
+    document.getElementById('editAssetBtn').onclick = () => {
+        closeDetailModal();
+        if (window.currentAssetId) openAddModal(window.currentAssetId);
+    };
+    document.getElementById('deleteAssetBtn').onclick = () => {
+        if (window.currentAssetId && confirm('Удалить актив и всю историю?')) {
+            deleteAsset(window.currentAssetId);
+            closeDetailModal();
+        }
+    };
+
+    // Инициализация
     updatePortfolio();
 </script>
 </body>
