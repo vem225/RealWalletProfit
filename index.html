@@ -11,28 +11,77 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
+            background-color: var(--bg-color, #ffffff);
+            color: var(--text-color, #000000);
             padding: 20px 16px 40px;
             min-height: 100vh;
+            transition: background-color 0.2s, color 0.2s;
         }
+        /* Тема по умолчанию (светлая) */
+        body.light {
+            --bg-color: #ffffff;
+            --secondary-bg: #f8f8f8;
+            --text-color: #000000;
+            --hint-color: #8e8e93;
+            --separator-color: rgba(0,0,0,0.05);
+            --button-bg: #2a7f6e;
+            --button-text: #ffffff;
+        }
+        body.dark {
+            --bg-color: #1c1c1e;
+            --secondary-bg: #2c2c2e;
+            --text-color: #ffffff;
+            --hint-color: #8e8e93;
+            --separator-color: rgba(255,255,255,0.1);
+            --button-bg: #2a7f6e;
+            --button-text: #ffffff;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
         .container { max-width: 500px; margin: 0 auto; }
         
-        .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .app-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 24px; 
+            position: relative;
+        }
         .app-title h1 {
             font-size: 24px; font-weight: 700;
             background: linear-gradient(135deg, #2a7f6e, #4c9f8f);
             -webkit-background-clip: text; color: transparent;
         }
-        .app-title p { font-size: 13px; color: var(--tg-theme-hint-color, #8e8e93); }
+        .app-title p { font-size: 13px; color: var(--hint-color); }
+        
+        .theme-toggle {
+            background: var(--secondary-bg);
+            border: none;
+            border-radius: 30px;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 22px;
+            transition: background 0.2s;
+            color: var(--text-color);
+        }
+        .theme-toggle:hover {
+            opacity: 0.8;
+        }
 
-        #ton-connect-button { display: flex; justify-content: flex-end; }
+        #ton-connect-button { display: flex; justify-content: flex-end; margin-left: 12px; }
 
         .balance-card {
-            background-color: var(--tg-theme-secondary-bg-color, #f8f8f8);
+            background-color: var(--secondary-bg);
             border-radius: 24px; padding: 24px 20px; margin-bottom: 20px; text-align: center;
         }
-        .balance-label { font-size: 14px; color: var(--tg-theme-hint-color, #8e8e93); margin-bottom: 8px; text-transform: uppercase;}
+        .balance-label { font-size: 14px; color: var(--hint-color); margin-bottom: 8px; text-transform: uppercase;}
         .balance-amount { font-size: 42px; font-weight: 800; line-height: 1.2; }
         
         .profit-badge {
@@ -45,18 +94,18 @@
         .assets-header { font-size: 18px; font-weight: 600; margin-bottom: 16px; margin-top: 20px; display: flex; justify-content: space-between;}
         
         .asset-list {
-            background-color: var(--tg-theme-secondary-bg-color, #f8f8f8);
+            background-color: var(--secondary-bg);
             border-radius: 20px; overflow: hidden; margin-bottom: 28px;
         }
         .asset-item {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 16px; border-bottom: 1px solid var(--tg-theme-separator-color, rgba(0,0,0,0.05));
+            padding: 16px; border-bottom: 1px solid var(--separator-color);
         }
         .asset-item:last-child { border-bottom: none; }
         
-        .asset-info { display: flex; flex-direction: column; gap: 4px; }
+        .asset-info { display: flex; flex-direction: column; gap: 4px; flex: 1; }
         .asset-name { font-weight: 600; font-size: 16px; text-transform: uppercase; }
-        .asset-amount { font-size: 13px; color: var(--tg-theme-hint-color, #8e8e93); }
+        .asset-details { font-size: 13px; color: var(--hint-color); display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
         
         .asset-financials { text-align: right; display: flex; flex-direction: column; gap: 4px; }
         .asset-value { font-weight: 600; font-size: 16px; }
@@ -65,8 +114,8 @@
         .pnl-neg { color: #ff3b30; }
 
         .btn {
-            width: 100%; background-color: var(--tg-theme-button-color, #2a7f6e);
-            color: var(--tg-theme-button-text-color, #ffffff);
+            width: 100%; background-color: var(--button-bg);
+            color: var(--button-text);
             border: none; border-radius: 14px; padding: 14px 12px;
             font-size: 16px; font-weight: 600; cursor: pointer;
         }
@@ -77,19 +126,18 @@
             background: rgba(0,0,0,0.5); z-index: 100; justify-content: center; align-items: flex-end;
         }
         .modal-content {
-            background-color: var(--tg-theme-bg-color, #ffffff); width: 100%;
+            background-color: var(--bg-color); width: 100%;
             border-radius: 24px 24px 0 0; padding: 24px 20px; padding-bottom: 40px;
         }
         .modal-title { font-size: 20px; font-weight: 600; margin-bottom: 16px; }
         .input-group { margin-bottom: 16px; }
-        .input-group label { display: block; font-size: 14px; color: var(--tg-theme-hint-color, #8e8e93); margin-bottom: 8px; }
+        .input-group label { display: block; font-size: 14px; color: var(--hint-color); margin-bottom: 8px; }
         .input-group input {
             width: 100%; padding: 14px; border-radius: 12px;
-            border: 1px solid var(--tg-theme-separator-color, #e0e0e0);
-            background-color: var(--tg-theme-secondary-bg-color, #f8f8f8);
-            color: var(--tg-theme-text-color, #000); font-size: 16px; outline: none;
+            border: 1px solid var(--separator-color);
+            background-color: var(--secondary-bg);
+            color: var(--text-color); font-size: 16px; outline: none;
         }
-        /* Стили для автодополнения */
         .autocomplete-container {
             position: relative;
         }
@@ -98,8 +146,8 @@
             top: 100%;
             left: 0;
             right: 0;
-            background-color: var(--tg-theme-secondary-bg-color, #ffffff);
-            border: 1px solid var(--tg-theme-separator-color, #ccc);
+            background-color: var(--bg-color);
+            border: 1px solid var(--separator-color);
             border-radius: 12px;
             max-height: 200px;
             overflow-y: auto;
@@ -109,17 +157,23 @@
         .autocomplete-suggestion {
             padding: 12px 14px;
             cursor: pointer;
-            border-bottom: 1px solid var(--tg-theme-separator-color, #f0f0f0);
+            border-bottom: 1px solid var(--separator-color);
         }
         .autocomplete-suggestion:last-child {
             border-bottom: none;
         }
         .autocomplete-suggestion:hover {
-            background-color: var(--tg-theme-button-color, #2a7f6e);
-            color: var(--tg-theme-button-text-color, white);
+            background-color: var(--button-bg);
+            color: var(--button-text);
         }
         .modal-buttons { display: flex; gap: 12px; margin-top: 24px; }
-        .btn-cancel { background-color: var(--tg-theme-secondary-bg-color, #e9e9ef); color: var(--tg-theme-text-color, #000); }
+        .btn-cancel { background-color: var(--secondary-bg); color: var(--text-color); }
+
+        /* Адаптив */
+        @media (max-width: 480px) {
+            body { padding: 16px 12px 40px; }
+            .balance-amount { font-size: 36px; }
+        }
     </style>
 </head>
 <body>
@@ -129,7 +183,10 @@
             <h1>RealWalletProfit</h1>
             <p>Истинный PnL</p>
         </div>
-        <div id="ton-connect-button"></div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <button id="themeToggleBtn" class="theme-toggle">🌙</button>
+            <div id="ton-connect-button"></div>
+        </div>
     </div>
 
     <div class="balance-card">
@@ -178,7 +235,7 @@
 </div>
 
 <script>
-    // ---------- Предопределённый список активов с ключевыми словами ----------
+    // ---------- Предопределённый список активов с ключевыми словами (добавлены ADI, Monad) ----------
     const assetsCatalog = [
         { id: "bitcoin", name: "Bitcoin (BTC)", keywords: ["bitcoin", "btc", "биткоин", "биткойн"] },
         { id: "ethereum", name: "Ethereum (ETH)", keywords: ["ethereum", "eth", "эфириум", "эфир"] },
@@ -209,14 +266,42 @@
         { id: "maker", name: "Maker (MKR)", keywords: ["maker", "mkr"] },
         { id: "compound-governance-token", name: "Compound (COMP)", keywords: ["compound", "comp"] },
         { id: "yearn-finance", name: "Yearn.finance (YFI)", keywords: ["yearn", "yfi"] },
-        { id: "pancakeswap-token", name: "PancakeSwap (CAKE)", keywords: ["pancake", "cake"] }
-        { id: "adi", name: "ADI(ADI)", keywords: ["adi", "ади"] }
+        { id: "pancakeswap-token", name: "PancakeSwap (CAKE)", keywords: ["pancake", "cake"] },
+        // Новые активы
+        { id: "adi", name: "ADI (ADI)", keywords: ["adi", "adi token"] },
+        { id: "monad", name: "Monad (MON)", keywords: ["monad", "mon"] }
     ];
 
-    // ---------- Инициализация Telegram ----------
+    // ---------- Инициализация Telegram и темы ----------
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
+
+    // Управление темой
+    let currentTheme = localStorage.getItem('theme') || 'light'; // 'light' или 'dark'
+    function applyTheme(theme) {
+        document.body.className = theme;
+        const btn = document.getElementById('themeToggleBtn');
+        if (theme === 'dark') {
+            btn.innerHTML = '☀️';
+        } else {
+            btn.innerHTML = '🌙';
+        }
+        localStorage.setItem('theme', theme);
+    }
+    // Синхронизация с Telegram (если нужно переопределить)
+    if (tg.themeParams && tg.themeParams.bg_color) {
+        // Если Telegram передал тему, можно использовать, но для простоты оставляем пользовательский выбор
+        // currentTheme = tg.colorScheme === 'dark' ? 'dark' : 'light';
+        // applyTheme(currentTheme);
+    }
+    applyTheme(currentTheme);
+
+    document.getElementById('themeToggleBtn').addEventListener('click', () => {
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        currentTheme = newTheme;
+        applyTheme(currentTheme);
+    });
 
     // ---------- TON Connect (тестовая заглушка) ----------
     const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
@@ -232,7 +317,7 @@
 
     // ---------- Портфель ----------
     let myPortfolio = JSON.parse(localStorage.getItem('userPortfolio')) || [];
-    let selectedAsset = null; // выбранный актив из каталога
+    let selectedAsset = null;
 
     const formatMoney = (amount) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 
@@ -240,7 +325,7 @@
         const assetListEl = document.getElementById('assetList');
         
         if (myPortfolio.length === 0) {
-            assetListEl.innerHTML = '<div style="padding: 16px; text-align: center; color: gray;">Ваш портфель пуст. Добавьте активы!</div>';
+            assetListEl.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--hint-color);">Ваш портфель пуст. Добавьте активы!</div>';
             document.getElementById('totalBalance').innerText = '$0.00';
             document.getElementById('totalProfit').innerText = 'Нет данных';
             document.getElementById('totalProfit').className = 'profit-badge';
@@ -262,15 +347,12 @@
                 const investedValue = coin.investedUSD;
                 
                 const pnlUSD = currentValue - investedValue;
-                const pnlPercent = investedValue > 0 ? ((currentValue / investedValue) - 1) * 100 : 0;
-
                 totalCurrentValue += currentValue;
                 totalInvestedValue += investedValue;
 
                 const pnlClass = pnlUSD >= 0 ? 'pnl-pos' : 'pnl-neg';
                 const pnlSign = pnlUSD >= 0 ? '+' : '';
                 
-                // Найдём название актива из каталога (для отображения)
                 const assetInfo = assetsCatalog.find(a => a.id === coin.id);
                 const displayName = assetInfo ? assetInfo.name : coin.id.replace(/-/g, ' ').toUpperCase();
                 
@@ -278,7 +360,10 @@
                     <div class="asset-item">
                         <div class="asset-info">
                             <span class="asset-name">${displayName}</span>
-                            <span class="asset-amount">${coin.amount} (потрачено $${investedValue})</span>
+                            <div class="asset-details">
+                                <span>${coin.amount} шт.</span>
+                                <span>${formatMoney(currentValue)}</span>
+                            </div>
                         </div>
                         <div class="asset-financials">
                             <span class="asset-value">${formatMoney(currentValue)}</span>
@@ -307,7 +392,7 @@
         }
     }
 
-    // ---------- Автодополнение для поиска актива ----------
+    // ---------- Автодополнение ----------
     const searchInput = document.getElementById('assetSearchInput');
     const suggestionsBox = document.getElementById('suggestionsList');
 
@@ -381,16 +466,6 @@
         if (isNaN(amount) || isNaN(spent) || amount <= 0 || spent <= 0) {
             tg.showAlert('Пожалуйста, укажите корректное количество и сумму вложений.');
             return;
-        }
-
-        // Проверяем, не существует ли уже такой актив в портфеле (опционально)
-        const existing = myPortfolio.find(coin => coin.id === selectedAsset.id);
-        if (existing) {
-            if (confirm('Этот актив уже есть в портфеле. Добавить как отдельную позицию?')) {
-                // разрешаем дублирование
-            } else {
-                return;
-            }
         }
 
         myPortfolio.push({
