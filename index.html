@@ -183,7 +183,7 @@
     let currentPortfolioType='main';
     let currentDetailAssetId=null;
     let currentDetailType=null;
-    let cachedPrices={};
+    let cachedPrices=JSON.parse(localStorage.getItem('cachedPrices'))||{};
     let lastFetchTime=0;
     const FETCH_INTERVAL=60000;
 
@@ -194,6 +194,10 @@
 
     function savePortfolio(type){
         localStorage.setItem(type==='main'?'userPortfolio':'tonPortfolio',JSON.stringify(type==='main'?mainPortfolio:tonPortfolio));
+    }
+
+    function saveCachedPrices(){
+        localStorage.setItem('cachedPrices',JSON.stringify(cachedPrices));
     }
 
     function formatMoney(amount){
@@ -279,8 +283,11 @@
                     if(!res.ok)throw new Error(`HTTP ${res.status}`);
                     const prices=await res.json();
                     for(const asset of portfolio){
-                        if(prices[asset.id]?.usd!==undefined) cachedPrices[asset.id]=prices[asset.id].usd;
+                        if(prices[asset.id]?.usd!==undefined){
+                            cachedPrices[asset.id]=prices[asset.id].usd;
+                        }
                     }
+                    saveCachedPrices();
                     lastFetchTime=now;
                     success=true;
                 }
