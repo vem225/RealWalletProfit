@@ -542,6 +542,7 @@
         // Сохраняем идентификатор и тип портфеля для текущего открытого актива
         currentDetailAssetId = assetId;
         currentDetailType = currentPortfolioType;
+        console.log('showAssetDetails: сохранили', currentDetailAssetId, currentDetailType);
 
         const assetInfo = assetsCatalog.find(c => c.id === assetId);
         const displayName = assetInfo ? assetInfo.name : assetId.toUpperCase();
@@ -593,12 +594,17 @@
     }
 
     function deleteAsset(assetId, portfolioType) {
+        console.log('deleteAsset вызван с', assetId, portfolioType);
         if (portfolioType === 'main') {
+            const before = mainPortfolio.length;
             mainPortfolio = mainPortfolio.filter(a => a.id !== assetId);
+            console.log('Удаление из mainPortfolio, было', before, 'стало', mainPortfolio.length);
             savePortfolio('main');
             updatePortfolioUI('main');
         } else {
+            const before = tonPortfolio.length;
             tonPortfolio = tonPortfolio.filter(a => a.id !== assetId);
+            console.log('Удаление из tonPortfolio, было', before, 'стало', tonPortfolio.length);
             savePortfolio('ton');
             updatePortfolioUI('ton');
         }
@@ -764,18 +770,16 @@
         }
     };
 
+    // Исправленный обработчик удаления с confirm для надёжности
     document.getElementById('deleteAssetBtn').onclick = () => {
         if (currentDetailAssetId && currentDetailType) {
-            tg.showPopup({
-                title: 'Подтверждение',
-                message: 'Вы точно хотите удалить актив и всю историю?',
-                buttons: [{ type: 'ok', text: 'Удалить' }, { type: 'cancel', text: 'Отмена' }]
-            }, (btnId) => {
-                if (btnId === 'ok') {
-                    deleteAsset(currentDetailAssetId, currentDetailType);
-                    closeDetailModal();
-                }
-            });
+            const confirmed = confirm('Вы точно хотите удалить актив и всю историю?');
+            if (confirmed) {
+                deleteAsset(currentDetailAssetId, currentDetailType);
+                closeDetailModal();
+            }
+        } else {
+            console.warn('Не удалось удалить: currentDetailAssetId или currentDetailType =', currentDetailAssetId, currentDetailType);
         }
     };
 
