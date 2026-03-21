@@ -6,322 +6,62 @@
     <title>RealWalletProfit | Элитный портфель</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color, #0a0a0a);
-            color: var(--text-color, #ffffff);
-            padding: 12px 12px 32px;
-            min-height: 100vh;
-            transition: background-color 0.3s, color 0.3s;
-        }
-        @media (max-width: 400px) {
-            body { padding: 8px 10px 24px; }
-            .balance-amount { font-size: 38px; }
-            .modal-content { padding: 20px 16px 32px; }
-            .btn { padding: 12px; font-size: 14px; }
-            .asset-name, .asset-value { font-size: 16px; }
-            .asset-details { font-size: 12px; flex-wrap: wrap; }
-        }
-        body.light {
-            --bg-color: #f5f7fa;
-            --secondary-bg: #ffffff;
-            --text-color: #1e293b;
-            --hint-color: #64748b;
-            --separator-color: rgba(0,0,0,0.08);
-            --button-bg: #0f172a;
-            --button-text: #ffffff;
-            --card-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.02);
-            --invested-bg: rgba(0, 0, 0, 0.04);
-            --invested-color: #334155;
-        }
-        body.dark {
-            --bg-color: #0f172a;
-            --secondary-bg: #1e293b;
-            --text-color: #f1f5f9;
-            --hint-color: #94a3b8;
-            --separator-color: rgba(255,255,255,0.1);
-            --button-bg: #2d3a5e;
-            --button-text: #ffffff;
-            --card-shadow: 0 10px 25px -5px rgba(0,0,0,0.3), 0 8px 10px -6px rgba(0,0,0,0.2);
-            --invested-bg: rgba(148, 163, 184, 0.15);
-            --invested-color: #cbd5e1;
-        }
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-        }
-
-        .container { max-width: 520px; margin: 0 auto; }
-        
-        .app-header { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            margin-bottom: 20px;
-        }
-        .app-title h1 {
-            font-size: 24px; font-weight: 800;
-            background: linear-gradient(135deg, #c084fc, #60a5fa);
-            -webkit-background-clip: text; color: transparent;
-            letter-spacing: -0.5px;
-        }
-        .app-title p { font-size: 11px; color: var(--hint-color); margin-top: 2px; }
-
-        .theme-toggle {
-            background: var(--secondary-bg);
-            border: none;
-            border-radius: 40px;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 20px;
-            transition: all 0.2s;
-            color: var(--text-color);
-            box-shadow: var(--card-shadow);
-        }
-
-        .tabs {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 24px;
-            border-bottom: 1px solid var(--separator-color);
-            padding-bottom: 8px;
-        }
-        .tab-btn {
-            background: transparent;
-            border: none;
-            font-size: 18px;
-            font-weight: 600;
-            padding: 8px 0;
-            cursor: pointer;
-            color: var(--hint-color);
-            transition: all 0.2s;
-            flex: 1;
-            text-align: center;
-        }
-        .tab-btn.active {
-            color: var(--text-color);
-            border-bottom: 2px solid #3b82f6;
-        }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
-
-        .balance-card {
-            background: var(--secondary-bg);
-            border-radius: 28px;
-            padding: 20px 16px;
-            margin-bottom: 24px;
-            text-align: center;
-            box-shadow: var(--card-shadow);
-            border: 1px solid rgba(255,255,255,0.05);
-            position: relative;
-        }
-        .balance-label { font-size: 13px; color: var(--hint-color); letter-spacing: 1px; margin-bottom: 8px; text-transform: uppercase; font-weight: 500;}
-        .balance-amount { font-size: 44px; font-weight: 800; letter-spacing: -1px; line-height: 1.1; }
-        
-        .profit-badge {
-            display: inline-block; padding: 6px 14px; border-radius: 40px;
-            font-size: 13px; font-weight: 600; margin-top: 12px;
-        }
-        .positive { background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(34,197,94,0.05)); color: #22c55e; }
-        .negative { background: linear-gradient(135deg, rgba(239,68,68,0.2), rgba(239,68,68,0.05)); color: #ef4444; }
-
-        .invested-badge {
-            display: inline-block;
-            padding: 6px 14px;
-            border-radius: 40px;
-            font-size: 12px;
-            font-weight: 500;
-            background: var(--invested-bg);
-            color: var(--invested-color);
-            margin-top: 8px;
-        }
-
-        .stale-indicator {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            font-size: 18px;
-            animation: spin 1s linear infinite;
-            opacity: 0.7;
-            cursor: help;
-            display: none;
-        }
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        .stale-indicator.show {
-            display: inline-block;
-        }
-
-        .assets-header { font-size: 18px; font-weight: 700; margin-bottom: 16px; margin-top: 4px; display: flex; justify-content: space-between; align-items: baseline;}
-        
-        .asset-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 28px;
-        }
-        .asset-card {
-            background: var(--secondary-bg);
-            border-radius: 20px;
-            padding: 14px;
-            transition: transform 0.2s, box-shadow 0.2s;
-            cursor: pointer;
-            box-shadow: var(--card-shadow);
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-        .asset-card:hover {
-            transform: translateY(-2px);
-        }
-        .asset-main {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .asset-name {
-            font-weight: 700;
-            font-size: 17px;
-            background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
-            -webkit-background-clip: text;
-            color: transparent;
-        }
-        .asset-value {
-            font-weight: 700;
-            font-size: 17px;
-        }
-        .asset-details {
-            display: flex;
-            gap: 12px;
-            margin-top: 8px;
-            font-size: 12px;
-            color: var(--hint-color);
-        }
-        .asset-pnl {
-            font-weight: 600;
-            font-size: 12px;
-        }
-        .pnl-pos { color: #22c55e; }
-        .pnl-neg { color: #ef4444; }
-
-        .btn {
-            width: 100%;
-            background: linear-gradient(135deg, #3b82f6, #6366f1);
-            color: white;
-            border: none;
-            border-radius: 40px;
-            padding: 14px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-        }
-        .btn:active { transform: scale(0.98); }
-        .btn-secondary {
-            background: var(--button-bg);
-            color: var(--button-text);
-            border: 1px solid var(--separator-color);
-        }
-
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(8px);
-            z-index: 200;
-            justify-content: center;
-            align-items: flex-end;
-        }
-        .modal-content {
-            background: var(--secondary-bg);
-            width: 100%;
-            border-radius: 28px 28px 0 0;
-            padding: 24px 20px 32px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        .modal-title {
-            font-size: 22px;
-            font-weight: 700;
-            margin-bottom: 18px;
-        }
-        .input-group { margin-bottom: 18px; }
-        .input-group label {
-            display: block;
-            font-size: 13px;
-            color: var(--hint-color);
-            margin-bottom: 6px;
-            font-weight: 500;
-        }
-        .input-group input {
-            width: 100%;
-            padding: 12px;
-            border-radius: 18px;
-            border: 1px solid var(--separator-color);
-            background: var(--bg-color);
-            color: var(--text-color);
-            font-size: 15px;
-            outline: none;
-        }
-        .autocomplete-container { position: relative; }
-        .autocomplete-suggestions {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: var(--secondary-bg);
-            border-radius: 18px;
-            max-height: 180px;
-            overflow-y: auto;
-            z-index: 10;
-            box-shadow: var(--card-shadow);
-        }
-        .autocomplete-suggestion {
-            padding: 10px 14px;
-            cursor: pointer;
-            border-bottom: 1px solid var(--separator-color);
-        }
-        .autocomplete-suggestion:hover { background: var(--button-bg); color: white; }
-        .modal-buttons {
-            display: flex;
-            gap: 12px;
-            margin-top: 24px;
-        }
-        .btn-cancel {
-            background: var(--bg-color);
-            color: var(--text-color);
-            border: 1px solid var(--separator-color);
-        }
-        .history-list {
-            margin-top: 16px;
-            border-top: 1px solid var(--separator-color);
-            padding-top: 12px;
-        }
-        .history-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid var(--separator-color);
-            font-size: 13px;
-        }
-        .history-date { color: var(--hint-color); }
-        .delete-btn {
-            background: #ef4444;
-        }
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background-color:var(--bg-color,#0a0a0a);color:var(--text-color,#fff);padding:12px 12px 32px;min-height:100vh;transition:background-color .3s,color .3s}
+        @media(max-width:400px){body{padding:8px 10px 24px}.balance-amount{font-size:38px}.modal-content{padding:20px 16px 32px}.btn{padding:12px;font-size:14px}.asset-name,.asset-value{font-size:16px}.asset-details{font-size:12px;flex-wrap:wrap}}
+        body.light{--bg-color:#f5f7fa;--secondary-bg:#fff;--text-color:#1e293b;--hint-color:#64748b;--separator-color:rgba(0,0,0,0.08);--button-bg:#0f172a;--button-text:#fff;--card-shadow:0 10px 25px -5px rgba(0,0,0,0.05),0 8px 10px -6px rgba(0,0,0,0.02);--invested-bg:rgba(0,0,0,0.04);--invested-color:#334155}
+        body.dark{--bg-color:#0f172a;--secondary-bg:#1e293b;--text-color:#f1f5f9;--hint-color:#94a3b8;--separator-color:rgba(255,255,255,0.1);--button-bg:#2d3a5e;--button-text:#fff;--card-shadow:0 10px 25px -5px rgba(0,0,0,0.3),0 8px 10px -6px rgba(0,0,0,0.2);--invested-bg:rgba(148,163,184,0.15);--invested-color:#cbd5e1}
+        body{background-color:var(--bg-color);color:var(--text-color)}
+        .container{max-width:520px;margin:0 auto}
+        .app-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+        .app-title h1{font-size:24px;font-weight:800;background:linear-gradient(135deg,#c084fc,#60a5fa);-webkit-background-clip:text;color:transparent;letter-spacing:-.5px}
+        .app-title p{font-size:11px;color:var(--hint-color);margin-top:2px}
+        .theme-toggle{background:var(--secondary-bg);border:none;border-radius:40px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;transition:all .2s;color:var(--text-color);box-shadow:var(--card-shadow)}
+        .tabs{display:flex;gap:12px;margin-bottom:24px;border-bottom:1px solid var(--separator-color);padding-bottom:8px}
+        .tab-btn{background:transparent;border:none;font-size:18px;font-weight:600;padding:8px 0;cursor:pointer;color:var(--hint-color);transition:all .2s;flex:1;text-align:center}
+        .tab-btn.active{color:var(--text-color);border-bottom:2px solid #3b82f6}
+        .tab-content{display:none}
+        .tab-content.active{display:block}
+        .balance-card{background:var(--secondary-bg);border-radius:28px;padding:20px 16px;margin-bottom:24px;text-align:center;box-shadow:var(--card-shadow);border:1px solid rgba(255,255,255,0.05);position:relative}
+        .balance-label{font-size:13px;color:var(--hint-color);letter-spacing:1px;margin-bottom:8px;text-transform:uppercase;font-weight:500}
+        .balance-amount{font-size:44px;font-weight:800;letter-spacing:-1px;line-height:1.1}
+        .profit-badge{display:inline-block;padding:6px 14px;border-radius:40px;font-size:13px;font-weight:600;margin-top:12px}
+        .positive{background:linear-gradient(135deg,rgba(34,197,94,0.2),rgba(34,197,94,0.05));color:#22c55e}
+        .negative{background:linear-gradient(135deg,rgba(239,68,68,0.2),rgba(239,68,68,0.05));color:#ef4444}
+        .invested-badge{display:inline-block;padding:6px 14px;border-radius:40px;font-size:12px;font-weight:500;background:var(--invested-bg);color:var(--invested-color);margin-top:8px}
+        .stale-indicator{position:absolute;top:16px;right:16px;font-size:18px;animation:spin 1s linear infinite;opacity:.7;cursor:help;display:none}
+        @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+        .stale-indicator.show{display:inline-block}
+        .assets-header{font-size:18px;font-weight:700;margin-bottom:16px;margin-top:4px;display:flex;justify-content:space-between;align-items:baseline}
+        .asset-list{display:flex;flex-direction:column;gap:10px;margin-bottom:28px}
+        .asset-card{background:var(--secondary-bg);border-radius:20px;padding:14px;transition:transform .2s,box-shadow .2s;cursor:pointer;box-shadow:var(--card-shadow);border:1px solid rgba(255,255,255,0.05)}
+        .asset-card:hover{transform:translateY(-2px)}
+        .asset-main{display:flex;justify-content:space-between;align-items:center}
+        .asset-name{font-weight:700;font-size:17px;background:linear-gradient(135deg,#e2e8f0,#cbd5e1);-webkit-background-clip:text;color:transparent}
+        .asset-value{font-weight:700;font-size:17px}
+        .asset-details{display:flex;gap:12px;margin-top:8px;font-size:12px;color:var(--hint-color)}
+        .asset-pnl{font-weight:600;font-size:12px}
+        .pnl-pos{color:#22c55e}
+        .pnl-neg{color:#ef4444}
+        .btn{width:100%;background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;border:none;border-radius:40px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1)}
+        .btn:active{transform:scale(.98)}
+        .btn-secondary{background:var(--button-bg);color:var(--button-text);border:1px solid var(--separator-color)}
+        .modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:200;justify-content:center;align-items:flex-end}
+        .modal-content{background:var(--secondary-bg);width:100%;border-radius:28px 28px 0 0;padding:24px 20px 32px;max-height:90vh;overflow-y:auto}
+        .modal-title{font-size:22px;font-weight:700;margin-bottom:18px}
+        .input-group{margin-bottom:18px}
+        .input-group label{display:block;font-size:13px;color:var(--hint-color);margin-bottom:6px;font-weight:500}
+        .input-group input{width:100%;padding:12px;border-radius:18px;border:1px solid var(--separator-color);background:var(--bg-color);color:var(--text-color);font-size:15px;outline:none}
+        .autocomplete-container{position:relative}
+        .autocomplete-suggestions{position:absolute;top:100%;left:0;right:0;background:var(--secondary-bg);border-radius:18px;max-height:180px;overflow-y:auto;z-index:10;box-shadow:var(--card-shadow)}
+        .autocomplete-suggestion{padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--separator-color)}
+        .autocomplete-suggestion:hover{background:var(--button-bg);color:#fff}
+        .modal-buttons{display:flex;gap:12px;margin-top:24px}
+        .btn-cancel{background:var(--bg-color);color:var(--text-color);border:1px solid var(--separator-color)}
+        .history-list{margin-top:16px;border-top:1px solid var(--separator-color);padding-top:12px}
+        .history-item{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--separator-color);font-size:13px}
+        .history-date{color:var(--hint-color)}
+        .delete-btn{background:#ef4444}
     </style>
 </head>
 <body>
@@ -333,14 +73,10 @@
         </div>
         <button id="themeToggleBtn" class="theme-toggle">🌙</button>
     </div>
-
-    <!-- Вкладки -->
     <div class="tabs">
         <button class="tab-btn active" data-tab="main">💰 Кошелёк</button>
         <button class="tab-btn" data-tab="ton">⛓️ TON</button>
     </div>
-
-    <!-- Содержимое вкладки Кошелёк (основной портфель) -->
     <div id="mainTab" class="tab-content active">
         <div class="balance-card" id="mainBalanceCard">
             <div class="balance-label">Общая стоимость портфеля</div>
@@ -349,14 +85,10 @@
             <div class="invested-badge" id="mainTotalInvestedBadge">Общая сумма инвестиций: $0.00</div>
             <div class="stale-indicator" id="mainStaleIndicator" title="Данные могут быть устаревшими">⏳</div>
         </div>
-        <div class="assets-header">
-            <span>Активы</span>
-        </div>
+        <div class="assets-header"><span>Активы</span></div>
         <div class="asset-list" id="mainAssetList"></div>
         <button class="btn" id="openMainModalBtn">➕ Добавить актив</button>
     </div>
-
-    <!-- Содержимое вкладки TON (без интеграции с блокчейном) -->
     <div id="tonTab" class="tab-content">
         <div class="balance-card" id="tonBalanceCard">
             <div class="balance-label">Общая стоимость TON портфеля</div>
@@ -365,16 +97,11 @@
             <div class="invested-badge" id="tonTotalInvestedBadge">Общая сумма инвестиций: $0.00</div>
             <div class="stale-indicator" id="tonStaleIndicator" title="Данные могут быть устаревшими">⏳</div>
         </div>
-
-        <div class="assets-header">
-            <span>Активы (TON портфель)</span>
-        </div>
+        <div class="assets-header"><span>Активы (TON портфель)</span></div>
         <div class="asset-list" id="tonAssetList"></div>
         <button class="btn" id="openTonModalBtn">➕ Добавить актив в TON</button>
     </div>
 </div>
-
-<!-- Модалка добавления/редактирования (общая) -->
 <div class="modal-overlay" id="addModal">
     <div class="modal-content">
         <div class="modal-title" id="modalTitle">Новый актив</div>
@@ -399,480 +126,376 @@
         </div>
     </div>
 </div>
-
-<!-- Модалка деталей и истории (общая) -->
 <div class="modal-overlay" id="detailModal">
     <div class="modal-content">
         <div class="modal-title" id="detailTitle"></div>
         <div id="detailContent"></div>
         <div class="history-list" id="historyList"></div>
-        <div class="modal-buttons" style="margin-top: 20px;">
+        <div class="modal-buttons" style="margin-top:20px">
             <button class="btn btn-cancel" id="closeDetailBtn">Закрыть</button>
             <button class="btn" id="editAssetBtn">Редактировать</button>
             <button class="btn delete-btn" id="deleteAssetBtn">Удалить актив</button>
         </div>
     </div>
 </div>
-
 <script>
-    const tg = window.Telegram.WebApp;
+    const tg=window.Telegram.WebApp;
     tg.ready();
     tg.expand();
 
-    // --- Каталог активов ---
-    const assetsCatalog = [
-        { id: "bitcoin", name: "Bitcoin (BTC)", keywords: ["bitcoin", "btc", "биткоин"] },
-        { id: "ethereum", name: "Ethereum (ETH)", keywords: ["ethereum", "eth", "эфир"] },
-        { id: "the-open-network", name: "TON (Toncoin)", keywords: ["ton", "toncoin", "тон"] },
-        { id: "solana", name: "Solana (SOL)", keywords: ["solana", "sol"] },
-        { id: "binancecoin", name: "BNB", keywords: ["bnb", "binance"] },
-        { id: "ripple", name: "XRP", keywords: ["xrp", "ripple"] },
-        { id: "dogecoin", name: "Dogecoin (DOGE)", keywords: ["dogecoin", "doge"] },
-        { id: "cardano", name: "Cardano (ADA)", keywords: ["cardano", "ada"] },
-        { id: "avalanche-2", name: "Avalanche (AVAX)", keywords: ["avalanche", "avax"] },
-        { id: "polygon-ecosystem-token", name: "Polygon (MATIC)", keywords: ["polygon", "matic"] },
-        { id: "chainlink", name: "Chainlink (LINK)", keywords: ["chainlink", "link"] },
-        { id: "uniswap", name: "Uniswap (UNI)", keywords: ["uniswap", "uni"] },
-        { id: "litecoin", name: "Litecoin (LTC)", keywords: ["litecoin", "ltc"] },
-        { id: "tether", name: "Tether (USDT)", keywords: ["tether", "usdt"] },
-        { id: "usd-coin", name: "USD Coin (USDC)", keywords: ["usdc"] },
-        { id: "tether-gold", name: "Tether Gold (XAUt)", keywords: ["tether gold", "xaut"] },
-        { id: "stellar", name: "Stellar (XLM)", keywords: ["stellar", "xlm"] },
-        { id: "cosmos", name: "Cosmos (ATOM)", keywords: ["cosmos", "atom"] },
-        { id: "near", name: "NEAR Protocol (NEAR)", keywords: ["near"] },
-        { id: "algorand", name: "Algorand (ALGO)", keywords: ["algorand", "algo"] },
-        { id: "filecoin", name: "Filecoin (FIL)", keywords: ["filecoin", "fil"] },
-        { id: "theta-token", name: "Theta (THETA)", keywords: ["theta"] },
-        { id: "vechain", name: "VeChain (VET)", keywords: ["vechain", "vet"] },
-        { id: "eos", name: "EOS", keywords: ["eos"] },
-        { id: "tezos", name: "Tezos (XTZ)", keywords: ["tezos", "xtz"] },
-        { id: "aave", name: "Aave (AAVE)", keywords: ["aave"] },
-        { id: "maker", name: "Maker (MKR)", keywords: ["maker", "mkr"] },
-        { id: "compound-governance-token", name: "Compound (COMP)", keywords: ["compound", "comp"] },
-        { id: "yearn-finance", name: "Yearn.finance (YFI)", keywords: ["yearn", "yfi"] },
-        { id: "pancakeswap-token", name: "PancakeSwap (CAKE)", keywords: ["pancake", "cake"] },
-        { id: "adi-token", name: "ADI (ADI)", keywords: ["adi", "ади"] },
-        { id: "monad", name: "Monad (MON)", keywords: ["monad", "mon"] }
+    const assetsCatalog=[
+        {id:"bitcoin",name:"Bitcoin (BTC)",keywords:["bitcoin","btc","биткоин"]},
+        {id:"ethereum",name:"Ethereum (ETH)",keywords:["ethereum","eth","эфир"]},
+        {id:"the-open-network",name:"TON (Toncoin)",keywords:["ton","toncoin","тон"]},
+        {id:"solana",name:"Solana (SOL)",keywords:["solana","sol"]},
+        {id:"binancecoin",name:"BNB",keywords:["bnb","binance"]},
+        {id:"ripple",name:"XRP",keywords:["xrp","ripple"]},
+        {id:"dogecoin",name:"Dogecoin (DOGE)",keywords:["dogecoin","doge"]},
+        {id:"cardano",name:"Cardano (ADA)",keywords:["cardano","ada"]},
+        {id:"avalanche-2",name:"Avalanche (AVAX)",keywords:["avalanche","avax"]},
+        {id:"polygon-ecosystem-token",name:"Polygon (MATIC)",keywords:["polygon","matic"]},
+        {id:"chainlink",name:"Chainlink (LINK)",keywords:["chainlink","link"]},
+        {id:"uniswap",name:"Uniswap (UNI)",keywords:["uniswap","uni"]},
+        {id:"litecoin",name:"Litecoin (LTC)",keywords:["litecoin","ltc"]},
+        {id:"tether",name:"Tether (USDT)",keywords:["tether","usdt"]},
+        {id:"usd-coin",name:"USD Coin (USDC)",keywords:["usdc"]},
+        {id:"tether-gold",name:"Tether Gold (XAUt)",keywords:["tether gold","xaut"]},
+        {id:"stellar",name:"Stellar (XLM)",keywords:["stellar","xlm"]},
+        {id:"cosmos",name:"Cosmos (ATOM)",keywords:["cosmos","atom"]},
+        {id:"near",name:"NEAR Protocol (NEAR)",keywords:["near"]},
+        {id:"algorand",name:"Algorand (ALGO)",keywords:["algorand","algo"]},
+        {id:"filecoin",name:"Filecoin (FIL)",keywords:["filecoin","fil"]},
+        {id:"theta-token",name:"Theta (THETA)",keywords:["theta"]},
+        {id:"vechain",name:"VeChain (VET)",keywords:["vechain","vet"]},
+        {id:"eos",name:"EOS",keywords:["eos"]},
+        {id:"tezos",name:"Tezos (XTZ)",keywords:["tezos","xtz"]},
+        {id:"aave",name:"Aave (AAVE)",keywords:["aave"]},
+        {id:"maker",name:"Maker (MKR)",keywords:["maker","mkr"]},
+        {id:"compound-governance-token",name:"Compound (COMP)",keywords:["compound","comp"]},
+        {id:"yearn-finance",name:"Yearn.finance (YFI)",keywords:["yearn","yfi"]},
+        {id:"pancakeswap-token",name:"PancakeSwap (CAKE)",keywords:["pancake","cake"]},
+        {id:"adi-token",name:"ADI (ADI)",keywords:["adi","ади"]},
+        {id:"monad",name:"Monad (MON)",keywords:["monad","mon"]}
     ];
 
-    // --- Два портфеля ---
-    let mainPortfolio = JSON.parse(localStorage.getItem('userPortfolio')) || [];
-    let tonPortfolio = JSON.parse(localStorage.getItem('tonPortfolio')) || [];
-    let currentPortfolioType = 'main'; // 'main' или 'ton'
-    let currentDetailAssetId = null;
-    let currentDetailType = null;
+    let mainPortfolio=JSON.parse(localStorage.getItem('userPortfolio'))||[];
+    let tonPortfolio=JSON.parse(localStorage.getItem('tonPortfolio'))||[];
+    let currentPortfolioType='main';
+    let currentDetailAssetId=null;
+    let currentDetailType=null;
+    let cachedPrices={};
+    let lastFetchTime=0;
+    const FETCH_INTERVAL=60000;
 
-    // Кэш цен (глобальный для всех портфелей)
-    let cachedPrices = {}; // { assetId: price }
-
-    // Снапшоты последнего успешного рендеринга (или рендеринга с нулями)
-    let snapshots = {
-        main: null,
-        ton: null
-    };
-
-    // Функции для управления индикатором устаревания
-    function setStale(type, isStale) {
-        const indicator = document.getElementById(type === 'main' ? 'mainStaleIndicator' : 'tonStaleIndicator');
-        if (indicator) {
-            if (isStale) {
-                indicator.classList.add('show');
-            } else {
-                indicator.classList.remove('show');
-            }
-        }
+    function setStale(type,isStale){
+        const ind=document.getElementById(type==='main'?'mainStaleIndicator':'tonStaleIndicator');
+        if(ind) isStale?ind.classList.add('show'):ind.classList.remove('show');
     }
 
-    // Применение снапшота к UI
-    function applySnapshot(type) {
-        const snap = snapshots[type];
-        if (!snap) return;
-        const assetListEl = document.getElementById(type === 'main' ? 'mainAssetList' : 'tonAssetList');
-        const totalBalanceEl = document.getElementById(type === 'main' ? 'mainTotalBalance' : 'tonTotalBalance');
-        const profitEl = document.getElementById(type === 'main' ? 'mainTotalProfit' : 'tonTotalProfit');
-        const investedBadgeEl = document.getElementById(type === 'main' ? 'mainTotalInvestedBadge' : 'tonTotalInvestedBadge');
-
-        assetListEl.innerHTML = snap.assetListHtml;
-        totalBalanceEl.innerText = snap.totalBalance;
-        investedBadgeEl.innerHTML = `Общая сумма инвестиций: ${formatMoney(snap.totalInvested)}`;
-        profitEl.className = snap.profitClass;
-        profitEl.innerText = snap.profitHtml;
-
-        // обработчики кликов
-        document.querySelectorAll(`.asset-card[data-type="${type}"]`).forEach(card => {
-            card.removeEventListener('click', handleAssetClick);
-            card.addEventListener('click', handleAssetClick);
-        });
+    function savePortfolio(type){
+        localStorage.setItem(type==='main'?'userPortfolio':'tonPortfolio',JSON.stringify(type==='main'?mainPortfolio:tonPortfolio));
     }
 
-    // Вспомогательные функции
-    function savePortfolio(type) {
-        if (type === 'main') localStorage.setItem('userPortfolio', JSON.stringify(mainPortfolio));
-        else localStorage.setItem('tonPortfolio', JSON.stringify(tonPortfolio));
+    function formatMoney(amount){
+        return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(amount);
     }
 
-    function formatMoney(amount) {
-        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
-    }
-
-    // Рендеринг портфеля с заданными ценами
-    function renderPortfolioData(type, prices) {
-        const portfolio = type === 'main' ? mainPortfolio : tonPortfolio;
-        if (!portfolio.length) {
+    function renderPortfolioData(type,prices){
+        const portfolio=type==='main'?mainPortfolio:tonPortfolio;
+        if(!portfolio.length){
             return {
-                assetListHtml: '<div style="text-align: center; padding: 28px; color: var(--hint-color);">Портфель пуст. Добавьте активы ➕</div>',
-                totalBalance: '$0.00',
-                totalInvested: 0,
-                profitHtml: 'Нет данных',
-                profitClass: 'profit-badge'
+                assetListHtml:'<div style="text-align:center;padding:28px;color:var(--hint-color);">Портфель пуст. Добавьте активы ➕</div>',
+                totalBalance:'$0.00',
+                totalInvested:0,
+                profitHtml:'Нет данных',
+                profitClass:'profit-badge'
             };
         }
-
-        let totalCurrent = 0;
-        let totalInvested = 0;
-        let html = '';
-
-        for (const asset of portfolio) {
-            const price = prices[asset.id] || 0;
-            const currentValue = asset.amount * price;
-            totalCurrent += currentValue;
-            totalInvested += asset.investedUSD;
-            const pnl = currentValue - asset.investedUSD;
-            const pnlClass = pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
-            const pnlSign = pnl >= 0 ? '+' : '';
-            const assetInfo = assetsCatalog.find(c => c.id === asset.id);
-            const displayName = assetInfo ? assetInfo.name : asset.id.toUpperCase();
-
-            html += `
+        let totalCurrent=0,totalInvested=0,html='';
+        for(const asset of portfolio){
+            const price=prices[asset.id]||0;
+            const currentValue=asset.amount*price;
+            totalCurrent+=currentValue;
+            totalInvested+=asset.investedUSD;
+            const pnl=currentValue-asset.investedUSD;
+            const pnlClass=pnl>=0?'pnl-pos':'pnl-neg';
+            const pnlSign=pnl>=0?'+':'';
+            const info=assetsCatalog.find(c=>c.id===asset.id);
+            const name=info?info.name:asset.id.toUpperCase();
+            html+=`
                 <div class="asset-card" data-id="${asset.id}" data-type="${type}">
                     <div class="asset-main">
-                        <span class="asset-name">${displayName}</span>
+                        <span class="asset-name">${name}</span>
                         <span class="asset-value">${formatMoney(currentValue)}</span>
                     </div>
                     <div class="asset-details">
                         <span>${asset.amount} шт.</span>
                         <span>цена: ${formatMoney(price)}</span>
                     </div>
-                    <div class="asset-pnl ${pnlClass}" style="margin-top: 6px;">${pnlSign}${formatMoney(pnl)}</div>
+                    <div class="asset-pnl ${pnlClass}" style="margin-top:6px;">${pnlSign}${formatMoney(pnl)}</div>
                 </div>
             `;
         }
-
-        const totalPnL = totalCurrent - totalInvested;
-        let profitHtml, profitClass;
-        if (totalPnL >= 0) {
-            profitClass = 'profit-badge positive';
-            profitHtml = `+${formatMoney(totalPnL)} чистой прибыли`;
-        } else {
-            profitClass = 'profit-badge negative';
-            profitHtml = `${formatMoney(totalPnL)} убытка`;
+        const totalPnL=totalCurrent-totalInvested;
+        let profitHtml,profitClass;
+        if(totalPnL>=0){
+            profitClass='profit-badge positive';
+            profitHtml=`+${formatMoney(totalPnL)} чистой прибыли`;
+        }else{
+            profitClass='profit-badge negative';
+            profitHtml=`${formatMoney(totalPnL)} убытка`;
         }
-
-        return {
-            assetListHtml: html,
-            totalBalance: formatMoney(totalCurrent),
-            totalInvested: totalInvested,
-            profitHtml: profitHtml,
-            profitClass: profitClass
-        };
+        return {assetListHtml:html,totalBalance:formatMoney(totalCurrent),totalInvested,profitHtml,profitClass};
     }
 
-    // Обновление UI для портфеля (основная логика)
-    async function updatePortfolioUI(type) {
-        const portfolio = type === 'main' ? mainPortfolio : tonPortfolio;
+    function applySnapshot(type,snap){
+        if(!snap) return;
+        const assetList=document.getElementById(type==='main'?'mainAssetList':'tonAssetList');
+        const totalBal=document.getElementById(type==='main'?'mainTotalBalance':'tonTotalBalance');
+        const profit=document.getElementById(type==='main'?'mainTotalProfit':'tonTotalProfit');
+        const invested=document.getElementById(type==='main'?'mainTotalInvestedBadge':'tonTotalInvestedBadge');
+        assetList.innerHTML=snap.assetListHtml;
+        totalBal.innerText=snap.totalBalance;
+        invested.innerHTML=`Общая сумма инвестиций: ${formatMoney(snap.totalInvested)}`;
+        profit.className=snap.profitClass;
+        profit.innerText=snap.profitHtml;
+        document.querySelectorAll(`.asset-card[data-type="${type}"]`).forEach(card=>{
+            card.removeEventListener('click',handleAssetClick);
+            card.addEventListener('click',handleAssetClick);
+        });
+    }
 
-        // Показываем индикатор загрузки (всегда при попытке обновления)
-        setStale(type, true);
-
-        try {
-            if (portfolio.length) {
-                const ids = portfolio.map(a => a.id).join(',');
-                const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`);
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const prices = await res.json();
-
-                // Обновляем кэш цен
-                for (const asset of portfolio) {
-                    if (prices[asset.id]?.usd !== undefined) {
-                        cachedPrices[asset.id] = prices[asset.id].usd;
+    async function updatePortfolioUI(type,forceFetch=false){
+        const portfolio=type==='main'?mainPortfolio:tonPortfolio;
+        const now=Date.now();
+        const shouldFetch=forceFetch||(portfolio.length>0&&(now-lastFetchTime>=FETCH_INTERVAL));
+        let success=false;
+        if(shouldFetch){
+            setStale(type,true);
+            try{
+                const ids=portfolio.map(a=>a.id).join(',');
+                if(ids){
+                    const res=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`);
+                    if(!res.ok)throw new Error(`HTTP ${res.status}`);
+                    const prices=await res.json();
+                    for(const asset of portfolio){
+                        if(prices[asset.id]?.usd!==undefined) cachedPrices[asset.id]=prices[asset.id].usd;
                     }
+                    lastFetchTime=now;
+                    success=true;
                 }
-            }
-
-            // Рендерим с актуальными ценами (из кэша или полученными)
-            const newSnapshot = renderPortfolioData(type, cachedPrices);
-            snapshots[type] = newSnapshot;
-            applySnapshot(type);
-            // Убираем индикатор, так как данные свежие (запрос успешен)
-            setStale(type, false);
-        } catch (err) {
-            console.error('Ошибка загрузки цен:', err);
-            // Если есть сохранённый снапшот, применяем его
-            if (snapshots[type]) {
-                applySnapshot(type);
-                setStale(type, true);
-            } else {
-                // Нет снапшота — рендерим с нулевыми ценами (если есть активы)
-                const fallbackSnapshot = renderPortfolioData(type, {});
-                snapshots[type] = fallbackSnapshot;
-                applySnapshot(type);
-                setStale(type, true);
+            }catch(e){
+                console.error('Price fetch error:',e);
             }
         }
+        const snapshot=renderPortfolioData(type,cachedPrices);
+        if(success){
+            setStale(type,false);
+        }else if(shouldFetch){
+            setStale(type,true);
+        }else{
+            setStale(type,false);
+        }
+        applySnapshot(type,snapshot);
     }
 
-    function handleAssetClick(e) {
-        const card = e.currentTarget;
-        const id = card.getAttribute('data-id');
-        const type = card.getAttribute('data-type');
-        currentPortfolioType = type;
+    function handleAssetClick(e){
+        const card=e.currentTarget;
+        const id=card.getAttribute('data-id');
+        const type=card.getAttribute('data-type');
+        currentPortfolioType=type;
         showAssetDetails(id);
     }
 
-    function showAssetDetails(assetId) {
-        const portfolio = currentPortfolioType === 'main' ? mainPortfolio : tonPortfolio;
-        const asset = portfolio.find(a => a.id === assetId);
-        if (!asset) return;
-        // Сохраняем идентификатор и тип портфеля для текущего открытого актива
-        currentDetailAssetId = assetId;
-        currentDetailType = currentPortfolioType;
-        console.log('showAssetDetails: сохранили', currentDetailAssetId, currentDetailType);
-
-        const assetInfo = assetsCatalog.find(c => c.id === assetId);
-        const displayName = assetInfo ? assetInfo.name : assetId.toUpperCase();
-        document.getElementById('detailTitle').innerText = displayName;
-
-        let historyHtml = '<h4 style="margin-bottom: 10px;">История операций</h4>';
-        if (asset.history && asset.history.length) {
-            asset.history.slice().reverse().forEach(h => {
-                const sign = h.amountDelta >= 0 ? '+' : '';
-                historyHtml += `
+    function showAssetDetails(assetId){
+        const portfolio=currentPortfolioType==='main'?mainPortfolio:tonPortfolio;
+        const asset=portfolio.find(a=>a.id===assetId);
+        if(!asset) return;
+        currentDetailAssetId=assetId;
+        currentDetailType=currentPortfolioType;
+        const info=assetsCatalog.find(c=>c.id===assetId);
+        const name=info?info.name:assetId.toUpperCase();
+        document.getElementById('detailTitle').innerText=name;
+        let html='<h4 style="margin-bottom:10px;">История операций</h4>';
+        if(asset.history?.length){
+            [...asset.history].reverse().forEach(h=>{
+                const sign=h.amountDelta>=0?'+':'';
+                html+=`
                     <div class="history-item">
                         <div>${h.date}</div>
                         <div>${sign}${h.amountDelta} шт. ($${Math.abs(h.investedDelta).toFixed(2)})</div>
                     </div>
                 `;
             });
-        } else {
-            historyHtml += '<div class="history-item">Нет операций</div>';
+        }else html+='<div class="history-item">Нет операций</div>';
+        document.getElementById('historyList').innerHTML=html;
+        document.getElementById('detailModal').style.display='flex';
+    }
+
+    function closeDetailModal(){
+        document.getElementById('detailModal').style.display='none';
+        currentDetailAssetId=null;
+        currentDetailType=null;
+    }
+
+    function addOrUpdateAsset(assetId,amountDelta,investedDelta,type){
+        const portfolio=type==='main'?mainPortfolio:tonPortfolio;
+        const now=new Date().toLocaleString();
+        const existing=portfolio.find(a=>a.id===assetId);
+        if(existing){
+            existing.amount+=amountDelta;
+            existing.investedUSD+=investedDelta;
+            existing.history.push({date:now,amountDelta,investedDelta,type:'add'});
+        }else{
+            portfolio.push({id:assetId,amount:amountDelta,investedUSD:investedDelta,history:[{date:now,amountDelta,investedDelta,type:'add'}]});
         }
-        document.getElementById('historyList').innerHTML = historyHtml;
-        document.getElementById('detailModal').style.display = 'flex';
+        savePortfolio(type);
+        updatePortfolioUI(type,true);
     }
 
-    function closeDetailModal() {
-        document.getElementById('detailModal').style.display = 'none';
-        currentDetailAssetId = null;
-        currentDetailType = null;
-    }
-
-    // Добавление/обновление актива (используется только для добавления нового)
-    function addOrUpdateAsset(assetId, amountDelta, investedDelta, portfolioType) {
-        let portfolio = portfolioType === 'main' ? mainPortfolio : tonPortfolio;
-        const existing = portfolio.find(a => a.id === assetId);
-        const now = new Date().toLocaleString();
-        if (existing) {
-            existing.amount += amountDelta;
-            existing.investedUSD += investedDelta;
-            existing.history.push({ date: now, amountDelta, investedDelta, type: 'add' });
-        } else {
-            portfolio.push({
-                id: assetId,
-                amount: amountDelta,
-                investedUSD: investedDelta,
-                history: [{ date: now, amountDelta, investedDelta, type: 'add' }]
-            });
-        }
-        savePortfolio(portfolioType);
-        updatePortfolioUI(portfolioType);
-    }
-
-    function deleteAsset(assetId, portfolioType) {
-        console.log('deleteAsset вызван с', assetId, portfolioType);
-        if (portfolioType === 'main') {
-            mainPortfolio = mainPortfolio.filter(a => a.id !== assetId);
+    function deleteAsset(assetId,type){
+        if(type==='main'){
+            mainPortfolio=mainPortfolio.filter(a=>a.id!==assetId);
             savePortfolio('main');
-            updatePortfolioUI('main');
-        } else {
-            tonPortfolio = tonPortfolio.filter(a => a.id !== assetId);
+            updatePortfolioUI('main',true);
+        }else{
+            tonPortfolio=tonPortfolio.filter(a=>a.id!==assetId);
             savePortfolio('ton');
-            updatePortfolioUI('ton');
+            updatePortfolioUI('ton',true);
         }
     }
 
-    function editAsset(assetId, newAmount, newInvested, portfolioType) {
-        let portfolio = portfolioType === 'main' ? mainPortfolio : tonPortfolio;
-        const asset = portfolio.find(a => a.id === assetId);
-        if (asset) {
-            const oldAmount = asset.amount;
-            const oldInvested = asset.investedUSD;
-            const amountDelta = newAmount - oldAmount;
-            const investedDelta = newInvested - oldInvested;
-            asset.amount = newAmount;
-            asset.investedUSD = newInvested;
-            asset.history.push({ date: new Date().toLocaleString(), amountDelta, investedDelta, type: 'edit' });
-            savePortfolio(portfolioType);
-            updatePortfolioUI(portfolioType);
+    function editAsset(assetId,newAmount,newInvested,type){
+        const portfolio=type==='main'?mainPortfolio:tonPortfolio;
+        const asset=portfolio.find(a=>a.id===assetId);
+        if(asset){
+            const amountDelta=newAmount-asset.amount;
+            const investedDelta=newInvested-asset.investedUSD;
+            asset.amount=newAmount;
+            asset.investedUSD=newInvested;
+            asset.history.push({date:new Date().toLocaleString(),amountDelta,investedDelta,type:'edit'});
+            savePortfolio(type);
+            updatePortfolioUI(type,true);
         }
     }
 
-    // --- Модалка добавления/редактирования ---
-    const addModal = document.getElementById('addModal');
-    let isEditMode = false;
-    let editingAssetId = null;
-    let selectedAsset = null;
-
-    function openAddModal(portfolioType, editId = null) {
-        currentPortfolioType = portfolioType;
-        if (editId) {
-            isEditMode = true;
-            editingAssetId = editId;
-            const portfolio = portfolioType === 'main' ? mainPortfolio : tonPortfolio;
-            const asset = portfolio.find(a => a.id === editId);
-            if (asset) {
-                const assetInfo = assetsCatalog.find(c => c.id === editId);
-                document.getElementById('modalTitle').innerText = 'Редактировать актив';
-                document.getElementById('assetSearchInput').value = assetInfo ? assetInfo.name : editId;
-                document.getElementById('coinAmountInput').value = asset.amount;
-                document.getElementById('coinSpentInput').value = asset.investedUSD;
-                selectedAsset = assetInfo;
+    const addModal=document.getElementById('addModal');
+    let isEditMode=false,editingAssetId=null,selectedAsset=null;
+    function openAddModal(portfolioType,editId=null){
+        currentPortfolioType=portfolioType;
+        if(editId){
+            isEditMode=true;
+            editingAssetId=editId;
+            const portfolio=portfolioType==='main'?mainPortfolio:tonPortfolio;
+            const asset=portfolio.find(a=>a.id===editId);
+            if(asset){
+                const info=assetsCatalog.find(c=>c.id===editId);
+                document.getElementById('modalTitle').innerText='Редактировать актив';
+                document.getElementById('assetSearchInput').value=info?info.name:editId;
+                document.getElementById('coinAmountInput').value=asset.amount;
+                document.getElementById('coinSpentInput').value=asset.investedUSD;
+                selectedAsset=info;
             }
-        } else {
-            isEditMode = false;
-            editingAssetId = null;
-            document.getElementById('modalTitle').innerText = 'Новый актив';
-            document.getElementById('assetSearchInput').value = '';
-            document.getElementById('coinAmountInput').value = '';
-            document.getElementById('coinSpentInput').value = '';
-            selectedAsset = null;
+        }else{
+            isEditMode=false;
+            editingAssetId=null;
+            document.getElementById('modalTitle').innerText='Новый актив';
+            document.getElementById('assetSearchInput').value='';
+            document.getElementById('coinAmountInput').value='';
+            document.getElementById('coinSpentInput').value='';
+            selectedAsset=null;
         }
-        addModal.style.display = 'flex';
+        addModal.style.display='flex';
     }
-
-    function closeAddModal() {
-        addModal.style.display = 'none';
-        isEditMode = false;
-        editingAssetId = null;
-        selectedAsset = null;
+    function closeAddModal(){
+        addModal.style.display='none';
+        isEditMode=false;
+        editingAssetId=null;
+        selectedAsset=null;
     }
-
-    document.getElementById('saveAssetBtn').addEventListener('click', () => {
-        if (!selectedAsset) {
+    document.getElementById('saveAssetBtn').addEventListener('click',()=>{
+        if(!selectedAsset){
             tg.showAlert('Выберите актив из списка');
             return;
         }
-        const amount = parseFloat(document.getElementById('coinAmountInput').value);
-        const spent = parseFloat(document.getElementById('coinSpentInput').value);
-        if (isNaN(amount) || isNaN(spent) || amount <= 0 || spent <= 0) {
+        const amount=parseFloat(document.getElementById('coinAmountInput').value);
+        const spent=parseFloat(document.getElementById('coinSpentInput').value);
+        if(isNaN(amount)||isNaN(spent)||amount<=0||spent<=0){
             tg.showAlert('Введите корректные значения');
             return;
         }
-        if (isEditMode && editingAssetId) {
-            editAsset(editingAssetId, amount, spent, currentPortfolioType);
-        } else {
-            addOrUpdateAsset(selectedAsset.id, amount, spent, currentPortfolioType);
-        }
+        if(isEditMode&&editingAssetId) editAsset(editingAssetId,amount,spent,currentPortfolioType);
+        else addOrUpdateAsset(selectedAsset.id,amount,spent,currentPortfolioType);
         closeAddModal();
     });
 
-    // --- Автодополнение ---
-    const searchInput = document.getElementById('assetSearchInput');
-    const suggestionsBox = document.getElementById('suggestionsList');
-    let debounceTimer;
-    function filterAssets(query) {
-        if (!query.trim()) return [];
-        const lower = query.toLowerCase();
-        return assetsCatalog.filter(a => a.name.toLowerCase().includes(lower) || a.keywords.some(k => k.includes(lower)));
+    const searchInput=document.getElementById('assetSearchInput');
+    const suggestions=document.getElementById('suggestionsList');
+    let debTimer;
+    function filterAssets(q){
+        if(!q.trim()) return [];
+        const lower=q.toLowerCase();
+        return assetsCatalog.filter(a=>a.name.toLowerCase().includes(lower)||a.keywords.some(k=>k.includes(lower)));
     }
-    function showSuggestions(list) {
-        if (!list.length) { suggestionsBox.style.display = 'none'; return; }
-        suggestionsBox.innerHTML = '';
-        list.forEach(asset => {
-            const div = document.createElement('div');
-            div.className = 'autocomplete-suggestion';
-            div.textContent = asset.name;
-            div.onclick = () => {
-                selectedAsset = asset;
-                searchInput.value = asset.name;
-                suggestionsBox.style.display = 'none';
-            };
-            suggestionsBox.appendChild(div);
+    function showSuggestions(list){
+        if(!list.length){suggestions.style.display='none';return;}
+        suggestions.innerHTML='';
+        list.forEach(asset=>{
+            const div=document.createElement('div');
+            div.className='autocomplete-suggestion';
+            div.textContent=asset.name;
+            div.onclick=()=>{selectedAsset=asset;searchInput.value=asset.name;suggestions.style.display='none';};
+            suggestions.appendChild(div);
         });
-        suggestionsBox.style.display = 'block';
+        suggestions.style.display='block';
     }
-    searchInput.addEventListener('input', (e) => {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-            const filtered = filterAssets(e.target.value);
-            showSuggestions(filtered);
-        }, 200);
+    searchInput.addEventListener('input',e=>{
+        clearTimeout(debTimer);
+        debTimer=setTimeout(()=>{showSuggestions(filterAssets(e.target.value));},200);
     });
-    document.addEventListener('click', (e) => {
-        if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
-            suggestionsBox.style.display = 'none';
-        }
+    document.addEventListener('click',e=>{
+        if(!searchInput.contains(e.target)&&!suggestions.contains(e.target)) suggestions.style.display='none';
     });
 
-    // --- Темная/светлая тема ---
-    let currentTheme = localStorage.getItem('theme') || 'dark';
-    function applyTheme(theme) {
-        document.body.className = theme;
-        document.getElementById('themeToggleBtn').innerHTML = theme === 'dark' ? '☀️' : '🌙';
-        localStorage.setItem('theme', theme);
-        currentTheme = theme;
+    let curTheme=localStorage.getItem('theme')||'dark';
+    function applyTheme(theme){
+        document.body.className=theme;
+        document.getElementById('themeToggleBtn').innerHTML=theme==='dark'?'☀️':'🌙';
+        localStorage.setItem('theme',theme);
+        curTheme=theme;
     }
-    applyTheme(currentTheme);
-    document.getElementById('themeToggleBtn').addEventListener('click', () => {
-        applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
-    });
+    applyTheme(curTheme);
+    document.getElementById('themeToggleBtn').addEventListener('click',()=>applyTheme(curTheme==='dark'?'light':'dark'));
 
-    // --- Вкладки ---
-    function switchTab(tabId) {
-        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    function switchTab(tabId){
+        document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
         document.getElementById(`${tabId}Tab`).classList.add('active');
         document.querySelector(`.tab-btn[data-tab="${tabId}"]`).classList.add('active');
-        if (tabId === 'main') {
-            currentPortfolioType = 'main';
-            updatePortfolioUI('main');
-        } else {
-            currentPortfolioType = 'ton';
-            updatePortfolioUI('ton');
-        }
+        currentPortfolioType=tabId;
+        updatePortfolioUI(tabId);
     }
+    document.querySelectorAll('.tab-btn').forEach(btn=>btn.addEventListener('click',()=>switchTab(btn.getAttribute('data-tab'))));
 
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
-    });
-
-    // --- Кнопки модалок и действий ---
-    document.getElementById('openMainModalBtn').onclick = () => openAddModal('main');
-    document.getElementById('openTonModalBtn').onclick = () => openAddModal('ton');
-    document.getElementById('closeModalBtn').onclick = closeAddModal;
-    document.getElementById('closeDetailBtn').onclick = closeDetailModal;
-
-    document.getElementById('editAssetBtn').onclick = () => {
-        if (currentDetailAssetId && currentDetailType) {
-            const assetIdToEdit = currentDetailAssetId;
-            const portfolioTypeForEdit = currentDetailType;
+    document.getElementById('openMainModalBtn').onclick=()=>openAddModal('main');
+    document.getElementById('openTonModalBtn').onclick=()=>openAddModal('ton');
+    document.getElementById('closeModalBtn').onclick=closeAddModal;
+    document.getElementById('closeDetailBtn').onclick=closeDetailModal;
+    document.getElementById('editAssetBtn').onclick=()=>{
+        if(currentDetailAssetId&&currentDetailType){
+            const id=currentDetailAssetId,type=currentDetailType;
             closeDetailModal();
-            openAddModal(portfolioTypeForEdit, assetIdToEdit);
+            openAddModal(type,id);
         }
     };
-
-    document.getElementById('deleteAssetBtn').onclick = () => {
-        if (currentDetailAssetId && currentDetailType) {
-            const confirmed = confirm('Вы точно хотите удалить актив и всю историю?');
-            if (confirmed) {
-                deleteAsset(currentDetailAssetId, currentDetailType);
+    document.getElementById('deleteAssetBtn').onclick=()=>{
+        if(currentDetailAssetId&&currentDetailType){
+            if(confirm('Вы точно хотите удалить актив и всю историю?')){
+                deleteAsset(currentDetailAssetId,currentDetailType);
                 closeDetailModal();
             }
-        } else {
-            console.warn('Не удалось удалить: currentDetailAssetId или currentDetailType =', currentDetailAssetId, currentDetailType);
         }
     };
-
-    // Инициализация
     updatePortfolioUI('main');
     updatePortfolioUI('ton');
 </script>
