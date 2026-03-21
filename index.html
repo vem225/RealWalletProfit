@@ -465,6 +465,24 @@
     // Кэш цен (глобальный для всех портфелей)
     let cachedPrices = {}; // { assetId: price }
 
+    // Снапшоты последнего успешного рендеринга
+    let snapshots = {
+        main: {
+            assetListHtml: '',
+            totalBalance: '$0.00',
+            totalInvested: 0,
+            profitHtml: '',
+            profitClass: ''
+        },
+        ton: {
+            assetListHtml: '',
+            totalBalance: '$0.00',
+            totalInvested: 0,
+            profitHtml: '',
+            profitClass: ''
+        }
+    };
+
     // Функции для управления индикатором устаревания
     function setStale(type, isStale) {
         const indicator = document.getElementById(type === 'main' ? 'mainStaleIndicator' : 'tonStaleIndicator');
@@ -477,6 +495,27 @@
         }
     }
 
+    // Применение снапшота к UI (без изменения цен)
+    function applySnapshot(type) {
+        const snap = snapshots[type];
+        const assetListEl = document.getElementById(type === 'main' ? 'mainAssetList' : 'tonAssetList');
+        const totalBalanceEl = document.getElementById(type === 'main' ? 'mainTotalBalance' : 'tonTotalBalance');
+        const profitEl = document.getElementById(type === 'main' ? 'mainTotalProfit' : 'tonTotalProfit');
+        const investedBadgeEl = document.getElementById(type === 'main' ? 'mainTotalInvestedBadge' : 'tonTotalInvestedBadge');
+
+        assetListEl.innerHTML = snap.assetListHtml;
+        totalBalanceEl.innerText = snap.totalBalance;
+        investedBadgeEl.innerHTML = `Общая сумма инвестиций: ${formatMoney(snap.totalInvested)}`;
+        profitEl.className = snap.profitClass;
+        profitEl.innerText = snap.profitHtml;
+
+        // обработчики кликов
+        document.querySelectorAll(`.asset-card[data-type="${type}"]`).forEach(card => {
+            card.removeEventListener('click', handleAssetClick);
+            card.addEventListener('click', handleAssetClick);
+        });
+    }
+
     // Вспомогательные функции
     function savePortfolio(type) {
         if (type === 'main') localStorage.setItem('userPortfolio', JSON.stringify(mainPortfolio));
@@ -487,27 +526,27 @@
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
     }
 
-    // Обновление UI для портфеля
+    // Обновление UI для портфеля (основная логика)
     async function updatePortfolioUI(type) {
         const portfolio = type === 'main' ? mainPortfolio : tonPortfolio;
-        const assetListEl = document.getElementById(type === 'main' ? 'mainAssetList' : 'tonAssetList');
-        const totalBalanceEl = document.getElementById(type === 'main' ? 'mainTotalBalance' : 'tonTotalBalance');
-        const profitEl = document.getElementById(type === 'main' ? 'mainTotalProfit' : 'tonTotalProfit');
-        const investedBadgeEl = document.getElementById(type === 'main' ? 'mainTotalInvestedBadge' : 'tonTotalInvestedBadge');
-
-        // Если портфель пуст — показываем пустое состояние
+        
+        // Если портфель пуст — показываем пустое состояние и сбрасываем снапшот
         if (!portfolio.length) {
-            assetListEl.innerHTML = '<div style="text-align: center; padding: 28px; color: var(--hint-color);">Портфель пуст. Добавьте активы ➕</div>';
-            totalBalanceEl.innerText = '$0.00';
-            profitEl.innerText = 'Нет данных';
-            investedBadgeEl.innerHTML = 'Общая сумма инвестиций: $0.00';
+            const emptyHtml = '<div style="text-align: center; padding: 28px; color: var(--hint-color);">Портфель пуст. Добавьте активы ➕</div>';
+            snapshots[type] = {
+                assetListHtml: emptyHtml,
+                totalBalance: '$0.00',
+                totalInvested: 0,
+                profitHtml: 'Нет данных',
+                profitClass: 'profit-badge'
+            };
+            applySnapshot(type);
             setStale(type, false);
             return;
         }
 
-        // Показываем спиннер (данные загружаются)
-        setStale(type, true); // показываем индикатор, что данные в процессе обновления
-        let pricesUsed = cachedPrices; // для рендеринга на случай ошибки будем использовать кэш
+        // Показываем индикатор загрузки
+        setStale(type, true);
 
         try {
             const ids = portfolio.map(a => a.id).join(',');
@@ -515,72 +554,86 @@
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const prices = await res.json();
 
-            // Успешный ответ — обновляем кэш
+            // Успешно: обновляем кэш цен
             for (const asset of portfolio) {
                 if (prices[asset.id]?.usd !== undefined) {
                     cachedPrices[asset.id] = prices[asset.id].usd;
                 }
             }
-            pricesUsed = cachedPrices;
 
-            // Скрываем индикатор, так как данные свежие
+            // Строим новые данные
+            let totalCurrent = 0;
+            let totalInvested = 0;
+            let html = '';
+
+            for (const asset of portfolio) {
+                const price = cachedPrices[asset.id] || 0;
+                const currentValue = asset.amount * price;
+                totalCurrent += currentValue;
+                totalInvested += asset.investedUSD;
+                const pnl = currentValue - asset.investedUSD;
+                const pnlClass = pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
+                const pnlSign = pnl >= 0 ? '+' : '';
+                const assetInfo = assetsCatalog.find(c => c.id === asset.id);
+                const displayName = assetInfo ? assetInfo.name : asset.id.toUpperCase();
+
+                html += `
+                    <div class="asset-card" data-id="${asset.id}" data-type="${type}">
+                        <div class="asset-main">
+                            <span class="asset-name">${displayName}</span>
+                            <span class="asset-value">${formatMoney(currentValue)}</span>
+                        </div>
+                        <div class="asset-details">
+                            <span>${asset.amount} шт.</span>
+                            <span>цена: ${formatMoney(price)}</span>
+                        </div>
+                        <div class="asset-pnl ${pnlClass}" style="margin-top: 6px;">${pnlSign}${formatMoney(pnl)}</div>
+                    </div>
+                `;
+            }
+
+            const totalPnL = totalCurrent - totalInvested;
+            let profitHtml, profitClass;
+            if (totalPnL >= 0) {
+                profitClass = 'profit-badge positive';
+                profitHtml = `+${formatMoney(totalPnL)} чистой прибыли`;
+            } else {
+                profitClass = 'profit-badge negative';
+                profitHtml = `${formatMoney(totalPnL)} убытка`;
+            }
+
+            // Сохраняем снапшот
+            snapshots[type] = {
+                assetListHtml: html,
+                totalBalance: formatMoney(totalCurrent),
+                totalInvested: totalInvested,
+                profitHtml: profitHtml,
+                profitClass: profitClass
+            };
+
+            // Применяем снапшот
+            applySnapshot(type);
+            // Скрываем индикатор (данные свежие)
             setStale(type, false);
         } catch (err) {
             console.error('Ошибка загрузки цен:', err);
-            // При ошибке оставляем индикатор (сигнализируем о возможной устаревшей информации)
-            setStale(type, true);
-            // Не показываем alert, чтобы не раздражать пользователя
+            // Если есть сохранённый снапшот — показываем его, иначе показываем пустое состояние
+            if (snapshots[type].assetListHtml) {
+                applySnapshot(type);
+                setStale(type, true);
+            } else {
+                // Нет снапшота, показываем заглушку "Загрузка..."
+                const assetListEl = document.getElementById(type === 'main' ? 'mainAssetList' : 'tonAssetList');
+                const totalBalanceEl = document.getElementById(type === 'main' ? 'mainTotalBalance' : 'tonTotalBalance');
+                const profitEl = document.getElementById(type === 'main' ? 'mainTotalProfit' : 'tonTotalProfit');
+                const investedBadgeEl = document.getElementById(type === 'main' ? 'mainTotalInvestedBadge' : 'tonTotalInvestedBadge');
+                assetListEl.innerHTML = '<div style="text-align: center; padding: 28px; color: var(--hint-color);">Загрузка...</div>';
+                totalBalanceEl.innerText = '$0.00';
+                profitEl.innerText = 'Загрузка...';
+                investedBadgeEl.innerHTML = 'Общая сумма инвестиций: $0.00';
+                setStale(type, true);
+            }
         }
-
-        // Теперь строим UI, используя pricesUsed (кэш или новые цены)
-        let totalCurrent = 0;
-        let totalInvested = 0;
-        let html = '';
-
-        for (const asset of portfolio) {
-            const price = pricesUsed[asset.id] || 0;
-            const currentValue = asset.amount * price;
-            totalCurrent += currentValue;
-            totalInvested += asset.investedUSD;
-            const pnl = currentValue - asset.investedUSD;
-            const pnlClass = pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
-            const pnlSign = pnl >= 0 ? '+' : '';
-            const assetInfo = assetsCatalog.find(c => c.id === asset.id);
-            const displayName = assetInfo ? assetInfo.name : asset.id.toUpperCase();
-
-            html += `
-                <div class="asset-card" data-id="${asset.id}" data-type="${type}">
-                    <div class="asset-main">
-                        <span class="asset-name">${displayName}</span>
-                        <span class="asset-value">${formatMoney(currentValue)}</span>
-                    </div>
-                    <div class="asset-details">
-                        <span>${asset.amount} шт.</span>
-                        <span>цена: ${formatMoney(price)}</span>
-                    </div>
-                    <div class="asset-pnl ${pnlClass}" style="margin-top: 6px;">${pnlSign}${formatMoney(pnl)}</div>
-                </div>
-            `;
-        }
-
-        assetListEl.innerHTML = html;
-        totalBalanceEl.innerText = formatMoney(totalCurrent);
-        investedBadgeEl.innerHTML = `Общая сумма инвестиций: ${formatMoney(totalInvested)}`;
-
-        const totalPnL = totalCurrent - totalInvested;
-        if (totalPnL >= 0) {
-            profitEl.className = 'profit-badge positive';
-            profitEl.innerText = `+${formatMoney(totalPnL)} чистой прибыли`;
-        } else {
-            profitEl.className = 'profit-badge negative';
-            profitEl.innerText = `${formatMoney(totalPnL)} убытка`;
-        }
-
-        // обработчики кликов
-        document.querySelectorAll(`.asset-card[data-type="${type}"]`).forEach(card => {
-            card.removeEventListener('click', handleAssetClick);
-            card.addEventListener('click', handleAssetClick);
-        });
     }
 
     function handleAssetClick(e) {
@@ -646,6 +699,7 @@
             });
         }
         savePortfolio(portfolioType);
+        // После изменения портфеля обновляем UI и сбрасываем снапшот (чтобы пересчиталось)
         updatePortfolioUI(portfolioType);
     }
 
