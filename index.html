@@ -465,22 +465,10 @@
     // Кэш цен (глобальный для всех портфелей)
     let cachedPrices = {}; // { assetId: price }
 
-    // Снапшоты последнего успешного рендеринга
+    // Снапшоты последнего успешного рендеринга (или рендеринга с нулями)
     let snapshots = {
-        main: {
-            assetListHtml: '',
-            totalBalance: '$0.00',
-            totalInvested: 0,
-            profitHtml: '',
-            profitClass: ''
-        },
-        ton: {
-            assetListHtml: '',
-            totalBalance: '$0.00',
-            totalInvested: 0,
-            profitHtml: '',
-            profitClass: ''
-        }
+        main: null,
+        ton: null
     };
 
     // Функции для управления индикатором устаревания
@@ -495,9 +483,10 @@
         }
     }
 
-    // Применение снапшота к UI (без изменения цен)
+    // Применение снапшота к UI
     function applySnapshot(type) {
         const snap = snapshots[type];
+        if (!snap) return;
         const assetListEl = document.getElementById(type === 'main' ? 'mainAssetList' : 'tonAssetList');
         const totalBalanceEl = document.getElementById(type === 'main' ? 'mainTotalBalance' : 'tonTotalBalance');
         const profitEl = document.getElementById(type === 'main' ? 'mainTotalProfit' : 'tonTotalProfit');
@@ -526,111 +515,107 @@
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
     }
 
-    // Обновление UI для портфеля (основная логика)
-    async function updatePortfolioUI(type) {
+    // Рендеринг портфеля с заданными ценами
+    function renderPortfolioData(type, prices) {
         const portfolio = type === 'main' ? mainPortfolio : tonPortfolio;
-        
-        // Если портфель пуст — показываем пустое состояние и сбрасываем снапшот
         if (!portfolio.length) {
-            const emptyHtml = '<div style="text-align: center; padding: 28px; color: var(--hint-color);">Портфель пуст. Добавьте активы ➕</div>';
-            snapshots[type] = {
-                assetListHtml: emptyHtml,
+            return {
+                assetListHtml: '<div style="text-align: center; padding: 28px; color: var(--hint-color);">Портфель пуст. Добавьте активы ➕</div>',
                 totalBalance: '$0.00',
                 totalInvested: 0,
                 profitHtml: 'Нет данных',
                 profitClass: 'profit-badge'
             };
-            applySnapshot(type);
-            setStale(type, false);
-            return;
         }
 
-        // Показываем индикатор загрузки
+        let totalCurrent = 0;
+        let totalInvested = 0;
+        let html = '';
+
+        for (const asset of portfolio) {
+            const price = prices[asset.id] || 0;
+            const currentValue = asset.amount * price;
+            totalCurrent += currentValue;
+            totalInvested += asset.investedUSD;
+            const pnl = currentValue - asset.investedUSD;
+            const pnlClass = pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
+            const pnlSign = pnl >= 0 ? '+' : '';
+            const assetInfo = assetsCatalog.find(c => c.id === asset.id);
+            const displayName = assetInfo ? assetInfo.name : asset.id.toUpperCase();
+
+            html += `
+                <div class="asset-card" data-id="${asset.id}" data-type="${type}">
+                    <div class="asset-main">
+                        <span class="asset-name">${displayName}</span>
+                        <span class="asset-value">${formatMoney(currentValue)}</span>
+                    </div>
+                    <div class="asset-details">
+                        <span>${asset.amount} шт.</span>
+                        <span>цена: ${formatMoney(price)}</span>
+                    </div>
+                    <div class="asset-pnl ${pnlClass}" style="margin-top: 6px;">${pnlSign}${formatMoney(pnl)}</div>
+                </div>
+            `;
+        }
+
+        const totalPnL = totalCurrent - totalInvested;
+        let profitHtml, profitClass;
+        if (totalPnL >= 0) {
+            profitClass = 'profit-badge positive';
+            profitHtml = `+${formatMoney(totalPnL)} чистой прибыли`;
+        } else {
+            profitClass = 'profit-badge negative';
+            profitHtml = `${formatMoney(totalPnL)} убытка`;
+        }
+
+        return {
+            assetListHtml: html,
+            totalBalance: formatMoney(totalCurrent),
+            totalInvested: totalInvested,
+            profitHtml: profitHtml,
+            profitClass: profitClass
+        };
+    }
+
+    // Обновление UI для портфеля (основная логика)
+    async function updatePortfolioUI(type) {
+        const portfolio = type === 'main' ? mainPortfolio : tonPortfolio;
+
+        // Показываем индикатор загрузки (всегда при попытке обновления)
         setStale(type, true);
 
         try {
-            const ids = portfolio.map(a => a.id).join(',');
-            const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const prices = await res.json();
+            if (portfolio.length) {
+                const ids = portfolio.map(a => a.id).join(',');
+                const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const prices = await res.json();
 
-            // Успешно: обновляем кэш цен
-            for (const asset of portfolio) {
-                if (prices[asset.id]?.usd !== undefined) {
-                    cachedPrices[asset.id] = prices[asset.id].usd;
+                // Обновляем кэш цен
+                for (const asset of portfolio) {
+                    if (prices[asset.id]?.usd !== undefined) {
+                        cachedPrices[asset.id] = prices[asset.id].usd;
+                    }
                 }
             }
 
-            // Строим новые данные
-            let totalCurrent = 0;
-            let totalInvested = 0;
-            let html = '';
-
-            for (const asset of portfolio) {
-                const price = cachedPrices[asset.id] || 0;
-                const currentValue = asset.amount * price;
-                totalCurrent += currentValue;
-                totalInvested += asset.investedUSD;
-                const pnl = currentValue - asset.investedUSD;
-                const pnlClass = pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
-                const pnlSign = pnl >= 0 ? '+' : '';
-                const assetInfo = assetsCatalog.find(c => c.id === asset.id);
-                const displayName = assetInfo ? assetInfo.name : asset.id.toUpperCase();
-
-                html += `
-                    <div class="asset-card" data-id="${asset.id}" data-type="${type}">
-                        <div class="asset-main">
-                            <span class="asset-name">${displayName}</span>
-                            <span class="asset-value">${formatMoney(currentValue)}</span>
-                        </div>
-                        <div class="asset-details">
-                            <span>${asset.amount} шт.</span>
-                            <span>цена: ${formatMoney(price)}</span>
-                        </div>
-                        <div class="asset-pnl ${pnlClass}" style="margin-top: 6px;">${pnlSign}${formatMoney(pnl)}</div>
-                    </div>
-                `;
-            }
-
-            const totalPnL = totalCurrent - totalInvested;
-            let profitHtml, profitClass;
-            if (totalPnL >= 0) {
-                profitClass = 'profit-badge positive';
-                profitHtml = `+${formatMoney(totalPnL)} чистой прибыли`;
-            } else {
-                profitClass = 'profit-badge negative';
-                profitHtml = `${formatMoney(totalPnL)} убытка`;
-            }
-
-            // Сохраняем снапшот
-            snapshots[type] = {
-                assetListHtml: html,
-                totalBalance: formatMoney(totalCurrent),
-                totalInvested: totalInvested,
-                profitHtml: profitHtml,
-                profitClass: profitClass
-            };
-
-            // Применяем снапшот
+            // Рендерим с актуальными ценами (из кэша или полученными)
+            const newSnapshot = renderPortfolioData(type, cachedPrices);
+            snapshots[type] = newSnapshot;
             applySnapshot(type);
-            // Скрываем индикатор (данные свежие)
+            // Убираем индикатор, так как данные свежие (запрос успешен)
             setStale(type, false);
         } catch (err) {
             console.error('Ошибка загрузки цен:', err);
-            // Если есть сохранённый снапшот — показываем его, иначе показываем пустое состояние
-            if (snapshots[type].assetListHtml) {
+            // Если есть сохранённый снапшот, применяем его
+            if (snapshots[type]) {
                 applySnapshot(type);
                 setStale(type, true);
             } else {
-                // Нет снапшота, показываем заглушку "Загрузка..."
-                const assetListEl = document.getElementById(type === 'main' ? 'mainAssetList' : 'tonAssetList');
-                const totalBalanceEl = document.getElementById(type === 'main' ? 'mainTotalBalance' : 'tonTotalBalance');
-                const profitEl = document.getElementById(type === 'main' ? 'mainTotalProfit' : 'tonTotalProfit');
-                const investedBadgeEl = document.getElementById(type === 'main' ? 'mainTotalInvestedBadge' : 'tonTotalInvestedBadge');
-                assetListEl.innerHTML = '<div style="text-align: center; padding: 28px; color: var(--hint-color);">Загрузка...</div>';
-                totalBalanceEl.innerText = '$0.00';
-                profitEl.innerText = 'Загрузка...';
-                investedBadgeEl.innerHTML = 'Общая сумма инвестиций: $0.00';
+                // Нет снапшота — рендерим с нулевыми ценами (если есть активы)
+                const fallbackSnapshot = renderPortfolioData(type, {});
+                snapshots[type] = fallbackSnapshot;
+                applySnapshot(type);
                 setStale(type, true);
             }
         }
@@ -699,7 +684,6 @@
             });
         }
         savePortfolio(portfolioType);
-        // После изменения портфеля обновляем UI и сбрасываем снапшот (чтобы пересчиталось)
         updatePortfolioUI(portfolioType);
     }
 
