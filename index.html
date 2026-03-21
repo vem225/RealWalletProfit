@@ -16,7 +16,6 @@
             min-height: 100vh;
             transition: background-color 0.3s, color 0.3s;
         }
-        /* адаптация под ширину 384px: уменьшаем отступы и шрифты */
         @media (max-width: 400px) {
             body { padding: 8px 10px 24px; }
             .balance-amount { font-size: 38px; }
@@ -86,7 +85,6 @@
             box-shadow: var(--card-shadow);
         }
 
-        /* вкладки */
         .tabs {
             display: flex;
             gap: 12px;
@@ -323,6 +321,10 @@
         .connect-btn {
             margin-bottom: 16px;
         }
+        input:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -335,13 +337,11 @@
         <button id="themeToggleBtn" class="theme-toggle">🌙</button>
     </div>
 
-    <!-- Вкладки -->
     <div class="tabs">
         <button class="tab-btn active" data-tab="main">💰 Кошелёк</button>
         <button class="tab-btn" data-tab="ton">⛓️ TON</button>
     </div>
 
-    <!-- Содержимое вкладки Кошелёк (основной портфель) -->
     <div id="mainTab" class="tab-content active">
         <div class="balance-card">
             <div class="balance-label">Общая стоимость портфеля</div>
@@ -356,7 +356,6 @@
         <button class="btn" id="openMainModalBtn">➕ Добавить актив</button>
     </div>
 
-    <!-- Содержимое вкладки TON -->
     <div id="tonTab" class="tab-content">
         <div class="balance-card">
             <div class="balance-label">TON Портфель</div>
@@ -365,7 +364,6 @@
             <div class="invested-badge" id="tonTotalInvestedBadge">Общая сумма инвестиций: $0.00</div>
         </div>
 
-        <!-- Блок информации о подключенном TON кошельке -->
         <div id="tonWalletInfo" class="ton-wallet-info" style="display: none;">
             <div>🔗 Подключен кошелек:</div>
             <div id="tonWalletAddress" style="font-weight: 500;"></div>
@@ -382,7 +380,6 @@
     </div>
 </div>
 
-<!-- Модалка добавления/редактирования (общая) -->
 <div class="modal-overlay" id="addModal">
     <div class="modal-content">
         <div class="modal-title" id="modalTitle">Новый актив</div>
@@ -408,7 +405,6 @@
     </div>
 </div>
 
-<!-- Модалка деталей и истории (общая) -->
 <div class="modal-overlay" id="detailModal">
     <div class="modal-content">
         <div class="modal-title" id="detailTitle"></div>
@@ -427,7 +423,6 @@
     tg.ready();
     tg.expand();
 
-    // --- Каталог активов ---
     const assetsCatalog = [
         { id: "bitcoin", name: "Bitcoin (BTC)", keywords: ["bitcoin", "btc", "биткоин"] },
         { id: "ethereum", name: "Ethereum (ETH)", keywords: ["ethereum", "eth", "эфир"] },
@@ -463,13 +458,12 @@
         { id: "monad", name: "Monad (MON)", keywords: ["monad", "mon"] }
     ];
 
-    // --- Два портфеля ---
     let mainPortfolio = JSON.parse(localStorage.getItem('userPortfolio')) || [];
     let tonPortfolio = JSON.parse(localStorage.getItem('tonPortfolio')) || [];
-    let currentPortfolioType = 'main'; // 'main' или 'ton'
+    let currentPortfolioType = 'main';
     let currentAssetIdForDetail = null;
+    let currentDetailPortfolioType = null; // запоминаем тип портфеля для открытого актива
 
-    // Вспомогательные функции
     function savePortfolio(type) {
         if (type === 'main') localStorage.setItem('userPortfolio', JSON.stringify(mainPortfolio));
         else localStorage.setItem('tonPortfolio', JSON.stringify(tonPortfolio));
@@ -479,7 +473,6 @@
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
     }
 
-    // Обновление UI для портфеля
     async function updatePortfolioUI(type) {
         const portfolio = type === 'main' ? mainPortfolio : tonPortfolio;
         const assetListEl = document.getElementById(type === 'main' ? 'mainAssetList' : 'tonAssetList');
@@ -543,7 +536,6 @@
                 profitEl.innerText = `${formatMoney(totalPnL)} убытка`;
             }
 
-            // обработчики кликов
             document.querySelectorAll(`.asset-card[data-type="${type}"]`).forEach(card => {
                 card.removeEventListener('click', handleAssetClick);
                 card.addEventListener('click', handleAssetClick);
@@ -559,12 +551,12 @@
         const card = e.currentTarget;
         const id = card.getAttribute('data-id');
         const type = card.getAttribute('data-type');
-        currentPortfolioType = type;
+        currentDetailPortfolioType = type;   // запоминаем для редактирования/удаления
         showAssetDetails(id);
     }
 
     function showAssetDetails(assetId) {
-        const portfolio = currentPortfolioType === 'main' ? mainPortfolio : tonPortfolio;
+        const portfolio = currentDetailPortfolioType === 'main' ? mainPortfolio : tonPortfolio;
         const asset = portfolio.find(a => a.id === assetId);
         if (!asset) return;
         const assetInfo = assetsCatalog.find(c => c.id === assetId);
@@ -593,9 +585,9 @@
     function closeDetailModal() {
         document.getElementById('detailModal').style.display = 'none';
         currentAssetIdForDetail = null;
+        currentDetailPortfolioType = null;
     }
 
-    // Добавление/обновление актива
     function addOrUpdateAsset(assetId, amountDelta, investedDelta, portfolioType) {
         let portfolio = portfolioType === 'main' ? mainPortfolio : tonPortfolio;
         const existing = portfolio.find(a => a.id === assetId);
@@ -644,14 +636,14 @@
         }
     }
 
-    // --- Модалка добавления/редактирования ---
+    // Модалка добавления/редактирования
     const addModal = document.getElementById('addModal');
     let isEditMode = false;
     let editingAssetId = null;
     let selectedAsset = null;
 
     function openAddModal(portfolioType, editId = null) {
-        currentPortfolioType = portfolioType;
+        currentPortfolioType = portfolioType; // для сохранения
         if (editId) {
             isEditMode = true;
             editingAssetId = editId;
@@ -660,16 +652,22 @@
             if (asset) {
                 const assetInfo = assetsCatalog.find(c => c.id === editId);
                 document.getElementById('modalTitle').innerText = 'Редактировать актив';
-                document.getElementById('assetSearchInput').value = assetInfo ? assetInfo.name : editId;
+                const searchInput = document.getElementById('assetSearchInput');
+                searchInput.value = assetInfo ? assetInfo.name : editId;
+                searchInput.disabled = true;   // запрещаем менять актив при редактировании
                 document.getElementById('coinAmountInput').value = asset.amount;
                 document.getElementById('coinSpentInput').value = asset.investedUSD;
                 selectedAsset = assetInfo;
+                // скрываем подсказки
+                document.getElementById('suggestionsList').style.display = 'none';
             }
         } else {
             isEditMode = false;
             editingAssetId = null;
             document.getElementById('modalTitle').innerText = 'Новый актив';
-            document.getElementById('assetSearchInput').value = '';
+            const searchInput = document.getElementById('assetSearchInput');
+            searchInput.disabled = false;
+            searchInput.value = '';
             document.getElementById('coinAmountInput').value = '';
             document.getElementById('coinSpentInput').value = '';
             selectedAsset = null;
@@ -682,6 +680,10 @@
         isEditMode = false;
         editingAssetId = null;
         selectedAsset = null;
+        const searchInput = document.getElementById('assetSearchInput');
+        searchInput.disabled = false;
+        searchInput.value = '';
+        document.getElementById('suggestionsList').style.display = 'none';
     }
 
     document.getElementById('saveAssetBtn').addEventListener('click', () => {
@@ -703,17 +705,19 @@
         closeAddModal();
     });
 
-    // --- Автодополнение ---
+    // Автодополнение
     const searchInput = document.getElementById('assetSearchInput');
     const suggestionsBox = document.getElementById('suggestionsList');
     let debounceTimer;
+
     function filterAssets(query) {
         if (!query.trim()) return [];
         const lower = query.toLowerCase();
         return assetsCatalog.filter(a => a.name.toLowerCase().includes(lower) || a.keywords.some(k => k.includes(lower)));
     }
+
     function showSuggestions(list) {
-        if (!list.length) { suggestionsBox.style.display = 'none'; return; }
+        if (!list.length || searchInput.disabled) { suggestionsBox.style.display = 'none'; return; }
         suggestionsBox.innerHTML = '';
         list.forEach(asset => {
             const div = document.createElement('div');
@@ -728,20 +732,23 @@
         });
         suggestionsBox.style.display = 'block';
     }
+
     searchInput.addEventListener('input', (e) => {
+        if (searchInput.disabled) return;
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => {
             const filtered = filterAssets(e.target.value);
             showSuggestions(filtered);
         }, 200);
     });
+
     document.addEventListener('click', (e) => {
         if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
             suggestionsBox.style.display = 'none';
         }
     });
 
-    // --- Темная/светлая тема ---
+    // Темная/светлая тема
     let currentTheme = localStorage.getItem('theme') || 'dark';
     function applyTheme(theme) {
         document.body.className = theme;
@@ -754,19 +761,17 @@
         applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
     });
 
-    // --- TON Connect и получение баланса ---
+    // TON Connect (убираем повторное уведомление)
     let tonConnectUI;
     let currentTonWallet = null;
+    let tonFirstStatusHandled = false;
 
     async function fetchTonBalance(address) {
         try {
-            // Используем public tonapi.io
             const res = await fetch(`https://tonapi.io/v2/accounts/${address}`);
             if (res.ok) {
                 const data = await res.json();
-                const balanceNano = data.balance;
-                const balanceTon = balanceNano / 1e9;
-                return balanceTon;
+                return data.balance / 1e9;
             }
         } catch (e) { console.error(e); }
         return null;
@@ -784,7 +789,6 @@
             const balanceTon = await fetchTonBalance(address);
             if (balanceTon !== null) {
                 balanceSpan.innerText = `Баланс: ${balanceTon.toFixed(4)} TON`;
-                // Получаем цену TON
                 try {
                     const priceRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=the-open-network&vs_currencies=usd');
                     const priceData = await priceRes.json();
@@ -808,25 +812,29 @@
                 buttonRootId: 'tonConnectButtonContainer'
             });
             tonConnectUI.onStatusChange(wallet => {
-                if (wallet) {
-                    currentTonWallet = wallet;
-                    updateTonWalletUI();
+                const wasConnected = !!currentTonWallet;
+                currentTonWallet = wallet;
+                updateTonWalletUI();
+                // показываем уведомление только если произошло реальное подключение (не при загрузке)
+                if (!tonFirstStatusHandled) {
+                    tonFirstStatusHandled = true;
+                    // при инициализации уведомление не показываем
+                } else if (wallet && !wasConnected) {
                     tg.showAlert('Кошелек TON подключен');
-                } else {
-                    currentTonWallet = null;
-                    updateTonWalletUI();
+                } else if (!wallet && wasConnected) {
+                    tg.showAlert('Кошелек TON отключен');
                 }
             });
-            // проверяем, был ли уже подключен
             const wallet = tonConnectUI.wallet;
             if (wallet) {
                 currentTonWallet = wallet;
                 updateTonWalletUI();
             }
+            tonFirstStatusHandled = true; // после инициализации флаг установлен
         } catch(e) { console.error('TON Connect init error', e); }
     }
 
-    // --- Вкладки ---
+    // Вкладки
     function switchTab(tabId) {
         document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -845,26 +853,26 @@
         btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
     });
 
-    // --- Кнопки модалок и действий ---
+    // Кнопки
     document.getElementById('openMainModalBtn').onclick = () => openAddModal('main');
     document.getElementById('openTonModalBtn').onclick = () => openAddModal('ton');
     document.getElementById('closeModalBtn').onclick = closeAddModal;
     document.getElementById('closeDetailBtn').onclick = closeDetailModal;
     document.getElementById('editAssetBtn').onclick = () => {
-        if (currentAssetIdForDetail) {
+        if (currentAssetIdForDetail && currentDetailPortfolioType) {
             closeDetailModal();
-            openAddModal(currentPortfolioType, currentAssetIdForDetail);
+            openAddModal(currentDetailPortfolioType, currentAssetIdForDetail);
         }
     };
     document.getElementById('deleteAssetBtn').onclick = () => {
-        if (currentAssetIdForDetail) {
+        if (currentAssetIdForDetail && currentDetailPortfolioType) {
             tg.showPopup({
                 title: 'Подтверждение',
                 message: 'Вы точно хотите удалить актив и всю историю?',
                 buttons: [{ type: 'ok', text: 'Удалить' }, { type: 'cancel', text: 'Отмена' }]
             }, (btnId) => {
                 if (btnId === 'ok') {
-                    deleteAsset(currentAssetIdForDetail, currentPortfolioType);
+                    deleteAsset(currentAssetIdForDetail, currentDetailPortfolioType);
                     closeDetailModal();
                 }
             });
