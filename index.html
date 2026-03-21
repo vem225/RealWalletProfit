@@ -12,9 +12,18 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-color, #0a0a0a);
             color: var(--text-color, #ffffff);
-            padding: 20px 16px 40px;
+            padding: 12px 12px 32px;
             min-height: 100vh;
             transition: background-color 0.3s, color 0.3s;
+        }
+        /* адаптация под ширину 384px: уменьшаем отступы и шрифты */
+        @media (max-width: 400px) {
+            body { padding: 8px 10px 24px; }
+            .balance-amount { font-size: 38px; }
+            .modal-content { padding: 20px 16px 32px; }
+            .btn { padding: 12px; font-size: 14px; }
+            .asset-name, .asset-value { font-size: 16px; }
+            .asset-details { font-size: 12px; flex-wrap: wrap; }
         }
         body.light {
             --bg-color: #f5f7fa;
@@ -51,80 +60,105 @@
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
-            margin-bottom: 32px;
+            margin-bottom: 20px;
         }
         .app-title h1 {
-            font-size: 28px; font-weight: 800;
+            font-size: 24px; font-weight: 800;
             background: linear-gradient(135deg, #c084fc, #60a5fa);
             -webkit-background-clip: text; color: transparent;
             letter-spacing: -0.5px;
         }
-        .app-title p { font-size: 13px; color: var(--hint-color); margin-top: 4px; }
+        .app-title p { font-size: 11px; color: var(--hint-color); margin-top: 2px; }
 
         .theme-toggle {
             background: var(--secondary-bg);
             border: none;
             border-radius: 40px;
-            width: 44px;
-            height: 44px;
+            width: 40px;
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            font-size: 22px;
+            font-size: 20px;
             transition: all 0.2s;
             color: var(--text-color);
             box-shadow: var(--card-shadow);
         }
 
-        #ton-connect-button { margin-left: 12px; }
+        /* вкладки */
+        .tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--separator-color);
+            padding-bottom: 8px;
+        }
+        .tab-btn {
+            background: transparent;
+            border: none;
+            font-size: 18px;
+            font-weight: 600;
+            padding: 8px 0;
+            cursor: pointer;
+            color: var(--hint-color);
+            transition: all 0.2s;
+            flex: 1;
+            text-align: center;
+        }
+        .tab-btn.active {
+            color: var(--text-color);
+            border-bottom: 2px solid #3b82f6;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
 
         .balance-card {
             background: var(--secondary-bg);
-            border-radius: 32px;
-            padding: 28px 24px;
-            margin-bottom: 28px;
+            border-radius: 28px;
+            padding: 20px 16px;
+            margin-bottom: 24px;
             text-align: center;
             box-shadow: var(--card-shadow);
-            backdrop-filter: blur(10px);
             border: 1px solid rgba(255,255,255,0.05);
         }
-        .balance-label { font-size: 14px; color: var(--hint-color); letter-spacing: 1px; margin-bottom: 12px; text-transform: uppercase; font-weight: 500;}
-        .balance-amount { font-size: 48px; font-weight: 800; letter-spacing: -1px; line-height: 1.1; }
+        .balance-label { font-size: 13px; color: var(--hint-color); letter-spacing: 1px; margin-bottom: 8px; text-transform: uppercase; font-weight: 500;}
+        .balance-amount { font-size: 44px; font-weight: 800; letter-spacing: -1px; line-height: 1.1; }
         
         .profit-badge {
-            display: inline-block; padding: 8px 16px; border-radius: 40px;
-            font-size: 14px; font-weight: 600; margin-top: 16px;
+            display: inline-block; padding: 6px 14px; border-radius: 40px;
+            font-size: 13px; font-weight: 600; margin-top: 12px;
         }
         .positive { background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(34,197,94,0.05)); color: #22c55e; }
         .negative { background: linear-gradient(135deg, rgba(239,68,68,0.2), rgba(239,68,68,0.05)); color: #ef4444; }
 
-        /* Новый стиль для общей суммы инвестиций */
         .invested-badge {
             display: inline-block;
-            padding: 8px 16px;
+            padding: 6px 14px;
             border-radius: 40px;
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 500;
             background: var(--invested-bg);
             color: var(--invested-color);
             margin-top: 8px;
-            backdrop-filter: blur(4px);
-            letter-spacing: 0.3px;
         }
 
-        .assets-header { font-size: 20px; font-weight: 700; margin-bottom: 20px; margin-top: 8px; letter-spacing: -0.3px; display: flex; justify-content: space-between; align-items: baseline;}
+        .assets-header { font-size: 18px; font-weight: 700; margin-bottom: 16px; margin-top: 4px; display: flex; justify-content: space-between; align-items: baseline;}
         
         .asset-list {
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            margin-bottom: 32px;
+            gap: 10px;
+            margin-bottom: 28px;
         }
         .asset-card {
             background: var(--secondary-bg);
-            border-radius: 24px;
-            padding: 16px;
+            border-radius: 20px;
+            padding: 14px;
             transition: transform 0.2s, box-shadow 0.2s;
             cursor: pointer;
             box-shadow: var(--card-shadow);
@@ -140,26 +174,25 @@
         }
         .asset-name {
             font-weight: 700;
-            font-size: 18px;
-            letter-spacing: -0.3px;
+            font-size: 17px;
             background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
             -webkit-background-clip: text;
             color: transparent;
         }
         .asset-value {
             font-weight: 700;
-            font-size: 18px;
+            font-size: 17px;
         }
         .asset-details {
             display: flex;
             gap: 12px;
-            margin-top: 12px;
-            font-size: 13px;
+            margin-top: 8px;
+            font-size: 12px;
             color: var(--hint-color);
         }
         .asset-pnl {
             font-weight: 600;
-            font-size: 13px;
+            font-size: 12px;
         }
         .pnl-pos { color: #22c55e; }
         .pnl-neg { color: #ef4444; }
@@ -170,16 +203,20 @@
             color: white;
             border: none;
             border-radius: 40px;
-            padding: 16px;
-            font-size: 16px;
+            padding: 14px;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
         .btn:active { transform: scale(0.98); }
+        .btn-secondary {
+            background: var(--button-bg);
+            color: var(--button-text);
+            border: 1px solid var(--separator-color);
+        }
 
-        /* Модалки */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -196,33 +233,32 @@
         .modal-content {
             background: var(--secondary-bg);
             width: 100%;
-            border-radius: 32px 32px 0 0;
-            padding: 28px 24px 40px;
+            border-radius: 28px 28px 0 0;
+            padding: 24px 20px 32px;
             max-height: 90vh;
             overflow-y: auto;
         }
         .modal-title {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 700;
-            margin-bottom: 20px;
-            letter-spacing: -0.5px;
+            margin-bottom: 18px;
         }
-        .input-group { margin-bottom: 20px; }
+        .input-group { margin-bottom: 18px; }
         .input-group label {
             display: block;
-            font-size: 14px;
+            font-size: 13px;
             color: var(--hint-color);
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             font-weight: 500;
         }
         .input-group input {
             width: 100%;
-            padding: 14px;
-            border-radius: 20px;
+            padding: 12px;
+            border-radius: 18px;
             border: 1px solid var(--separator-color);
             background: var(--bg-color);
             color: var(--text-color);
-            font-size: 16px;
+            font-size: 15px;
             outline: none;
         }
         .autocomplete-container { position: relative; }
@@ -232,14 +268,14 @@
             left: 0;
             right: 0;
             background: var(--secondary-bg);
-            border-radius: 20px;
-            max-height: 200px;
+            border-radius: 18px;
+            max-height: 180px;
             overflow-y: auto;
             z-index: 10;
             box-shadow: var(--card-shadow);
         }
         .autocomplete-suggestion {
-            padding: 12px 16px;
+            padding: 10px 14px;
             cursor: pointer;
             border-bottom: 1px solid var(--separator-color);
         }
@@ -247,7 +283,7 @@
         .modal-buttons {
             display: flex;
             gap: 12px;
-            margin-top: 28px;
+            margin-top: 24px;
         }
         .btn-cancel {
             background: var(--bg-color);
@@ -255,21 +291,37 @@
             border: 1px solid var(--separator-color);
         }
         .history-list {
-            margin-top: 20px;
+            margin-top: 16px;
             border-top: 1px solid var(--separator-color);
-            padding-top: 16px;
+            padding-top: 12px;
         }
         .history-item {
             display: flex;
             justify-content: space-between;
-            padding: 12px 0;
+            padding: 10px 0;
             border-bottom: 1px solid var(--separator-color);
-            font-size: 14px;
+            font-size: 13px;
         }
         .history-date { color: var(--hint-color); }
         .delete-btn {
             background: #ef4444;
-            margin-top: 16px;
+        }
+        .ton-wallet-info {
+            background: var(--secondary-bg);
+            border-radius: 20px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            word-break: break-all;
+            text-align: center;
+        }
+        .ton-balance {
+            font-weight: 700;
+            margin-top: 6px;
+            font-size: 18px;
+        }
+        .connect-btn {
+            margin-bottom: 16px;
         }
     </style>
 </head>
@@ -280,29 +332,57 @@
             <h1>RealWalletProfit</h1>
             <p>Удобный трекинг окупаемости вашего криптопортфеля</p>
         </div>
-        <div style="display: flex; gap: 12px;">
-            <button id="themeToggleBtn" class="theme-toggle">🌙</button>
-            <div id="ton-connect-button"></div>
+        <button id="themeToggleBtn" class="theme-toggle">🌙</button>
+    </div>
+
+    <!-- Вкладки -->
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="main">💰 Кошелёк</button>
+        <button class="tab-btn" data-tab="ton">⛓️ TON</button>
+    </div>
+
+    <!-- Содержимое вкладки Кошелёк (основной портфель) -->
+    <div id="mainTab" class="tab-content active">
+        <div class="balance-card">
+            <div class="balance-label">Общая стоимость портфеля</div>
+            <div class="balance-amount" id="mainTotalBalance">$0.00</div>
+            <div class="profit-badge" id="mainTotalProfit">Загрузка...</div>
+            <div class="invested-badge" id="mainTotalInvestedBadge">Общая сумма инвестиций: $0.00</div>
         </div>
+        <div class="assets-header">
+            <span>Активы</span>
+        </div>
+        <div class="asset-list" id="mainAssetList"></div>
+        <button class="btn" id="openMainModalBtn">➕ Добавить актив</button>
     </div>
 
-    <div class="balance-card">
-        <div class="balance-label">Общая стоимость портфеля</div>
-        <div class="balance-amount" id="totalBalance">$0.00</div>
-        <div class="profit-badge" id="totalProfit">Загрузка...</div>
-        <!-- Новая строка с общей суммой инвестиций -->
-        <div class="invested-badge" id="totalInvestedBadge">Общая сумма инвестиций: $0.00</div>
-    </div>
+    <!-- Содержимое вкладки TON -->
+    <div id="tonTab" class="tab-content">
+        <div class="balance-card">
+            <div class="balance-label">TON Портфель</div>
+            <div class="balance-amount" id="tonTotalBalance">$0.00</div>
+            <div class="profit-badge" id="tonTotalProfit">Загрузка...</div>
+            <div class="invested-badge" id="tonTotalInvestedBadge">Общая сумма инвестиций: $0.00</div>
+        </div>
 
-    <div class="assets-header">
-        <span>Активы</span>
-    </div>
-    <div class="asset-list" id="assetList"></div>
+        <!-- Блок информации о подключенном TON кошельке -->
+        <div id="tonWalletInfo" class="ton-wallet-info" style="display: none;">
+            <div>🔗 Подключен кошелек:</div>
+            <div id="tonWalletAddress" style="font-weight: 500;"></div>
+            <div id="tonWalletBalance" class="ton-balance">Баланс: -- TON</div>
+            <div id="tonWalletUsd" style="font-size: 12px; margin-top: 4px;"></div>
+        </div>
+        <div id="tonConnectButtonContainer" class="connect-btn"></div>
 
-    <button class="btn" id="openModalBtn">➕ Добавить актив</button>
+        <div class="assets-header">
+            <span>Активы (TON портфель)</span>
+        </div>
+        <div class="asset-list" id="tonAssetList"></div>
+        <button class="btn" id="openTonModalBtn">➕ Добавить актив в TON</button>
+    </div>
 </div>
 
-<!-- Модалка добавления/редактирования -->
+<!-- Модалка добавления/редактирования (общая) -->
 <div class="modal-overlay" id="addModal">
     <div class="modal-content">
         <div class="modal-title" id="modalTitle">Новый актив</div>
@@ -328,7 +408,7 @@
     </div>
 </div>
 
-<!-- Модалка деталей и истории -->
+<!-- Модалка деталей и истории (общая) -->
 <div class="modal-overlay" id="detailModal">
     <div class="modal-content">
         <div class="modal-title" id="detailTitle"></div>
@@ -347,7 +427,7 @@
     tg.ready();
     tg.expand();
 
-    // --- Каталог активов (с ADI и Monad) ---
+    // --- Каталог активов ---
     const assetsCatalog = [
         { id: "bitcoin", name: "Bitcoin (BTC)", keywords: ["bitcoin", "btc", "биткоин"] },
         { id: "ethereum", name: "Ethereum (ETH)", keywords: ["ethereum", "eth", "эфир"] },
@@ -364,7 +444,7 @@
         { id: "litecoin", name: "Litecoin (LTC)", keywords: ["litecoin", "ltc"] },
         { id: "tether", name: "Tether (USDT)", keywords: ["tether", "usdt"] },
         { id: "usd-coin", name: "USD Coin (USDC)", keywords: ["usdc"] },
-        { id: "tether-gold", name: "Tether Gold (XAUt)", keywords: ["tether gold", "xaut", "золото", "gold"] },
+        { id: "tether-gold", name: "Tether Gold (XAUt)", keywords: ["tether gold", "xaut"] },
         { id: "stellar", name: "Stellar (XLM)", keywords: ["stellar", "xlm"] },
         { id: "cosmos", name: "Cosmos (ATOM)", keywords: ["cosmos", "atom"] },
         { id: "near", name: "NEAR Protocol (NEAR)", keywords: ["near"] },
@@ -383,89 +463,40 @@
         { id: "monad", name: "Monad (MON)", keywords: ["monad", "mon"] }
     ];
 
-    // --- Структура портфеля: { id, amount, investedUSD, history: [{date, amountDelta, investedDelta}] } ---
-    let myPortfolio = JSON.parse(localStorage.getItem('userPortfolio')) || [];
+    // --- Два портфеля ---
+    let mainPortfolio = JSON.parse(localStorage.getItem('userPortfolio')) || [];
+    let tonPortfolio = JSON.parse(localStorage.getItem('tonPortfolio')) || [];
+    let currentPortfolioType = 'main'; // 'main' или 'ton'
+    let currentAssetIdForDetail = null;
 
-    // Функция сохранения
-    function savePortfolio() {
-        localStorage.setItem('userPortfolio', JSON.stringify(myPortfolio));
+    // Вспомогательные функции
+    function savePortfolio(type) {
+        if (type === 'main') localStorage.setItem('userPortfolio', JSON.stringify(mainPortfolio));
+        else localStorage.setItem('tonPortfolio', JSON.stringify(tonPortfolio));
     }
 
-    // Добавление/объединение актива
-    function addOrUpdateAsset(assetId, amountDelta, investedDelta) {
-        const existing = myPortfolio.find(a => a.id === assetId);
-        const now = new Date().toLocaleString();
-        if (existing) {
-            existing.amount += amountDelta;
-            existing.investedUSD += investedDelta;
-            existing.history.push({
-                date: now,
-                amountDelta: amountDelta,
-                investedDelta: investedDelta,
-                type: 'add'
-            });
-        } else {
-            myPortfolio.push({
-                id: assetId,
-                amount: amountDelta,
-                investedUSD: investedDelta,
-                history: [{
-                    date: now,
-                    amountDelta: amountDelta,
-                    investedDelta: investedDelta,
-                    type: 'add'
-                }]
-            });
-        }
-        savePortfolio();
-        updatePortfolio();
+    function formatMoney(amount) {
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
     }
 
-    // Удаление актива
-    function deleteAsset(assetId) {
-        myPortfolio = myPortfolio.filter(a => a.id !== assetId);
-        savePortfolio();
-        updatePortfolio();
-        closeDetailModal();
-    }
+    // Обновление UI для портфеля
+    async function updatePortfolioUI(type) {
+        const portfolio = type === 'main' ? mainPortfolio : tonPortfolio;
+        const assetListEl = document.getElementById(type === 'main' ? 'mainAssetList' : 'tonAssetList');
+        const totalBalanceEl = document.getElementById(type === 'main' ? 'mainTotalBalance' : 'tonTotalBalance');
+        const profitEl = document.getElementById(type === 'main' ? 'mainTotalProfit' : 'tonTotalProfit');
+        const investedBadgeEl = document.getElementById(type === 'main' ? 'mainTotalInvestedBadge' : 'tonTotalInvestedBadge');
 
-    // Редактирование: заменить количество и сумму, добавив запись в историю
-    function editAsset(assetId, newAmount, newInvested) {
-        const asset = myPortfolio.find(a => a.id === assetId);
-        if (asset) {
-            const oldAmount = asset.amount;
-            const oldInvested = asset.investedUSD;
-            const amountDelta = newAmount - oldAmount;
-            const investedDelta = newInvested - oldInvested;
-            asset.amount = newAmount;
-            asset.investedUSD = newInvested;
-            asset.history.push({
-                date: new Date().toLocaleString(),
-                amountDelta: amountDelta,
-                investedDelta: investedDelta,
-                type: 'edit'
-            });
-            savePortfolio();
-            updatePortfolio();
-        }
-    }
-
-    // Форматирование денег
-    const formatMoney = (amount) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
-
-    // Обновление главного экрана
-    async function updatePortfolio() {
-        const assetListEl = document.getElementById('assetList');
-        if (!myPortfolio.length) {
-            assetListEl.innerHTML = '<div style="text-align: center; padding: 32px; color: var(--hint-color);">Портфель пуст. Добавьте активы ➕</div>';
-            document.getElementById('totalBalance').innerText = '$0.00';
-            document.getElementById('totalProfit').innerText = 'Нет данных';
-            document.getElementById('totalInvestedBadge').innerHTML = 'Общая сумма инвестиций: $0.00';
+        if (!portfolio.length) {
+            assetListEl.innerHTML = '<div style="text-align: center; padding: 28px; color: var(--hint-color);">Портфель пуст. Добавьте активы ➕</div>';
+            totalBalanceEl.innerText = '$0.00';
+            profitEl.innerText = 'Нет данных';
+            investedBadgeEl.innerHTML = 'Общая сумма инвестиций: $0.00';
             return;
         }
 
         try {
-            const ids = myPortfolio.map(a => a.id).join(',');
+            const ids = portfolio.map(a => a.id).join(',');
             const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`);
             const prices = await res.json();
 
@@ -473,7 +504,7 @@
             let totalInvested = 0;
             let html = '';
 
-            myPortfolio.forEach(asset => {
+            portfolio.forEach(asset => {
                 const price = prices[asset.id]?.usd || 0;
                 const currentValue = asset.amount * price;
                 totalCurrent += currentValue;
@@ -485,7 +516,7 @@
                 const displayName = assetInfo ? assetInfo.name : asset.id.toUpperCase();
 
                 html += `
-                    <div class="asset-card" data-id="${asset.id}">
+                    <div class="asset-card" data-id="${asset.id}" data-type="${type}">
                         <div class="asset-main">
                             <span class="asset-name">${displayName}</span>
                             <span class="asset-value">${formatMoney(currentValue)}</span>
@@ -494,18 +525,16 @@
                             <span>${asset.amount} шт.</span>
                             <span>цена: ${formatMoney(price)}</span>
                         </div>
-                        <div class="asset-pnl ${pnlClass}" style="margin-top: 8px;">${pnlSign}${formatMoney(pnl)}</div>
+                        <div class="asset-pnl ${pnlClass}" style="margin-top: 6px;">${pnlSign}${formatMoney(pnl)}</div>
                     </div>
                 `;
             });
 
             assetListEl.innerHTML = html;
-            document.getElementById('totalBalance').innerText = formatMoney(totalCurrent);
-            // Обновляем общую сумму инвестиций
-            document.getElementById('totalInvestedBadge').innerHTML = `Общая сумма инвестиций: ${formatMoney(totalInvested)}`;
-            
+            totalBalanceEl.innerText = formatMoney(totalCurrent);
+            investedBadgeEl.innerHTML = `Общая сумма инвестиций: ${formatMoney(totalInvested)}`;
+
             const totalPnL = totalCurrent - totalInvested;
-            const profitEl = document.getElementById('totalProfit');
             if (totalPnL >= 0) {
                 profitEl.className = 'profit-badge positive';
                 profitEl.innerText = `+${formatMoney(totalPnL)} чистой прибыли`;
@@ -514,13 +543,10 @@
                 profitEl.innerText = `${formatMoney(totalPnL)} убытка`;
             }
 
-            // Вешаем обработчики на карточки
-            document.querySelectorAll('.asset-card').forEach(card => {
-                card.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const id = card.getAttribute('data-id');
-                    showAssetDetails(id);
-                });
+            // обработчики кликов
+            document.querySelectorAll(`.asset-card[data-type="${type}"]`).forEach(card => {
+                card.removeEventListener('click', handleAssetClick);
+                card.addEventListener('click', handleAssetClick);
             });
 
         } catch (err) {
@@ -529,15 +555,23 @@
         }
     }
 
-    // Показать детали актива и историю
+    function handleAssetClick(e) {
+        const card = e.currentTarget;
+        const id = card.getAttribute('data-id');
+        const type = card.getAttribute('data-type');
+        currentPortfolioType = type;
+        showAssetDetails(id);
+    }
+
     function showAssetDetails(assetId) {
-        const asset = myPortfolio.find(a => a.id === assetId);
+        const portfolio = currentPortfolioType === 'main' ? mainPortfolio : tonPortfolio;
+        const asset = portfolio.find(a => a.id === assetId);
         if (!asset) return;
         const assetInfo = assetsCatalog.find(c => c.id === assetId);
         const displayName = assetInfo ? assetInfo.name : assetId.toUpperCase();
         document.getElementById('detailTitle').innerText = displayName;
-        
-        let historyHtml = '<h4 style="margin-bottom: 12px;">История операций</h4>';
+
+        let historyHtml = '<h4 style="margin-bottom: 10px;">История операций</h4>';
         if (asset.history && asset.history.length) {
             asset.history.slice().reverse().forEach(h => {
                 const sign = h.amountDelta >= 0 ? '+' : '';
@@ -552,26 +586,77 @@
             historyHtml += '<div class="history-item">Нет операций</div>';
         }
         document.getElementById('historyList').innerHTML = historyHtml;
-
-        // Временно сохраняем id для редактирования/удаления
-        window.currentAssetId = assetId;
+        currentAssetIdForDetail = assetId;
         document.getElementById('detailModal').style.display = 'flex';
     }
 
     function closeDetailModal() {
         document.getElementById('detailModal').style.display = 'none';
+        currentAssetIdForDetail = null;
     }
 
-    // Модалка добавления/редактирования
+    // Добавление/обновление актива
+    function addOrUpdateAsset(assetId, amountDelta, investedDelta, portfolioType) {
+        let portfolio = portfolioType === 'main' ? mainPortfolio : tonPortfolio;
+        const existing = portfolio.find(a => a.id === assetId);
+        const now = new Date().toLocaleString();
+        if (existing) {
+            existing.amount += amountDelta;
+            existing.investedUSD += investedDelta;
+            existing.history.push({ date: now, amountDelta, investedDelta, type: 'add' });
+        } else {
+            portfolio.push({
+                id: assetId,
+                amount: amountDelta,
+                investedUSD: investedDelta,
+                history: [{ date: now, amountDelta, investedDelta, type: 'add' }]
+            });
+        }
+        savePortfolio(portfolioType);
+        updatePortfolioUI(portfolioType);
+    }
+
+    function deleteAsset(assetId, portfolioType) {
+        if (portfolioType === 'main') {
+            mainPortfolio = mainPortfolio.filter(a => a.id !== assetId);
+            savePortfolio('main');
+            updatePortfolioUI('main');
+        } else {
+            tonPortfolio = tonPortfolio.filter(a => a.id !== assetId);
+            savePortfolio('ton');
+            updatePortfolioUI('ton');
+        }
+    }
+
+    function editAsset(assetId, newAmount, newInvested, portfolioType) {
+        let portfolio = portfolioType === 'main' ? mainPortfolio : tonPortfolio;
+        const asset = portfolio.find(a => a.id === assetId);
+        if (asset) {
+            const oldAmount = asset.amount;
+            const oldInvested = asset.investedUSD;
+            const amountDelta = newAmount - oldAmount;
+            const investedDelta = newInvested - oldInvested;
+            asset.amount = newAmount;
+            asset.investedUSD = newInvested;
+            asset.history.push({ date: new Date().toLocaleString(), amountDelta, investedDelta, type: 'edit' });
+            savePortfolio(portfolioType);
+            updatePortfolioUI(portfolioType);
+        }
+    }
+
+    // --- Модалка добавления/редактирования ---
     const addModal = document.getElementById('addModal');
     let isEditMode = false;
     let editingAssetId = null;
+    let selectedAsset = null;
 
-    function openAddModal(editId = null) {
+    function openAddModal(portfolioType, editId = null) {
+        currentPortfolioType = portfolioType;
         if (editId) {
             isEditMode = true;
             editingAssetId = editId;
-            const asset = myPortfolio.find(a => a.id === editId);
+            const portfolio = portfolioType === 'main' ? mainPortfolio : tonPortfolio;
+            const asset = portfolio.find(a => a.id === editId);
             if (asset) {
                 const assetInfo = assetsCatalog.find(c => c.id === editId);
                 document.getElementById('modalTitle').innerText = 'Редактировать актив';
@@ -599,7 +684,6 @@
         selectedAsset = null;
     }
 
-    // Обработка сохранения
     document.getElementById('saveAssetBtn').addEventListener('click', () => {
         if (!selectedAsset) {
             tg.showAlert('Выберите актив из списка');
@@ -612,24 +696,22 @@
             return;
         }
         if (isEditMode && editingAssetId) {
-            editAsset(editingAssetId, amount, spent);
+            editAsset(editingAssetId, amount, spent, currentPortfolioType);
         } else {
-            addOrUpdateAsset(selectedAsset.id, amount, spent);
+            addOrUpdateAsset(selectedAsset.id, amount, spent, currentPortfolioType);
         }
         closeAddModal();
     });
 
     // --- Автодополнение ---
-    let selectedAsset = null;
     const searchInput = document.getElementById('assetSearchInput');
     const suggestionsBox = document.getElementById('suggestionsList');
-
+    let debounceTimer;
     function filterAssets(query) {
         if (!query.trim()) return [];
         const lower = query.toLowerCase();
         return assetsCatalog.filter(a => a.name.toLowerCase().includes(lower) || a.keywords.some(k => k.includes(lower)));
     }
-
     function showSuggestions(list) {
         if (!list.length) { suggestionsBox.style.display = 'none'; return; }
         suggestionsBox.innerHTML = '';
@@ -646,11 +728,12 @@
         });
         suggestionsBox.style.display = 'block';
     }
-
     searchInput.addEventListener('input', (e) => {
-        const q = e.target.value;
-        const filtered = filterAssets(q);
-        showSuggestions(filtered);
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            const filtered = filterAssets(e.target.value);
+            showSuggestions(filtered);
+        }, 200);
     });
     document.addEventListener('click', (e) => {
         if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
@@ -658,7 +741,7 @@
         }
     });
 
-    // --- Темная/светлая ---
+    // --- Темная/светлая тема ---
     let currentTheme = localStorage.getItem('theme') || 'dark';
     function applyTheme(theme) {
         document.body.className = theme;
@@ -671,34 +754,127 @@
         applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
     });
 
-    // --- TON Connect заглушка ---
-    try {
-        const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-            manifestUrl: 'https://ton-connect.github.io/demo-dapp-with-react-ui/tonconnect-manifest.json',
-            buttonRootId: 'ton-connect-button'
-        });
-        tonConnectUI.onStatusChange(wallet => {
-            if (wallet) tg.showAlert('Кошелек подключен');
-        });
-    } catch(e) { console.log(e); }
+    // --- TON Connect и получение баланса ---
+    let tonConnectUI;
+    let currentTonWallet = null;
 
-    // --- События ---
-    document.getElementById('openModalBtn').onclick = () => openAddModal();
+    async function fetchTonBalance(address) {
+        try {
+            // Используем public tonapi.io
+            const res = await fetch(`https://tonapi.io/v2/accounts/${address}`);
+            if (res.ok) {
+                const data = await res.json();
+                const balanceNano = data.balance;
+                const balanceTon = balanceNano / 1e9;
+                return balanceTon;
+            }
+        } catch (e) { console.error(e); }
+        return null;
+    }
+
+    async function updateTonWalletUI() {
+        const walletInfoDiv = document.getElementById('tonWalletInfo');
+        const addressSpan = document.getElementById('tonWalletAddress');
+        const balanceSpan = document.getElementById('tonWalletBalance');
+        const usdSpan = document.getElementById('tonWalletUsd');
+
+        if (currentTonWallet && currentTonWallet.account) {
+            const address = currentTonWallet.account.address;
+            addressSpan.innerText = `${address.slice(0, 6)}...${address.slice(-4)}`;
+            const balanceTon = await fetchTonBalance(address);
+            if (balanceTon !== null) {
+                balanceSpan.innerText = `Баланс: ${balanceTon.toFixed(4)} TON`;
+                // Получаем цену TON
+                try {
+                    const priceRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=the-open-network&vs_currencies=usd');
+                    const priceData = await priceRes.json();
+                    const tonPrice = priceData['the-open-network']?.usd || 0;
+                    const usdValue = balanceTon * tonPrice;
+                    usdSpan.innerText = `≈ ${formatMoney(usdValue)}`;
+                } catch(e) { usdSpan.innerText = ''; }
+            } else {
+                balanceSpan.innerText = `Баланс: не удалось загрузить`;
+            }
+            walletInfoDiv.style.display = 'block';
+        } else {
+            walletInfoDiv.style.display = 'none';
+        }
+    }
+
+    async function initTonConnect() {
+        try {
+            tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+                manifestUrl: 'https://ton-connect.github.io/demo-dapp-with-react-ui/tonconnect-manifest.json',
+                buttonRootId: 'tonConnectButtonContainer'
+            });
+            tonConnectUI.onStatusChange(wallet => {
+                if (wallet) {
+                    currentTonWallet = wallet;
+                    updateTonWalletUI();
+                    tg.showAlert('Кошелек TON подключен');
+                } else {
+                    currentTonWallet = null;
+                    updateTonWalletUI();
+                }
+            });
+            // проверяем, был ли уже подключен
+            const wallet = tonConnectUI.wallet;
+            if (wallet) {
+                currentTonWallet = wallet;
+                updateTonWalletUI();
+            }
+        } catch(e) { console.error('TON Connect init error', e); }
+    }
+
+    // --- Вкладки ---
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`${tabId}Tab`).classList.add('active');
+        document.querySelector(`.tab-btn[data-tab="${tabId}"]`).classList.add('active');
+        if (tabId === 'main') {
+            currentPortfolioType = 'main';
+            updatePortfolioUI('main');
+        } else {
+            currentPortfolioType = 'ton';
+            updatePortfolioUI('ton');
+        }
+    }
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
+    });
+
+    // --- Кнопки модалок и действий ---
+    document.getElementById('openMainModalBtn').onclick = () => openAddModal('main');
+    document.getElementById('openTonModalBtn').onclick = () => openAddModal('ton');
     document.getElementById('closeModalBtn').onclick = closeAddModal;
     document.getElementById('closeDetailBtn').onclick = closeDetailModal;
     document.getElementById('editAssetBtn').onclick = () => {
-        closeDetailModal();
-        if (window.currentAssetId) openAddModal(window.currentAssetId);
+        if (currentAssetIdForDetail) {
+            closeDetailModal();
+            openAddModal(currentPortfolioType, currentAssetIdForDetail);
+        }
     };
     document.getElementById('deleteAssetBtn').onclick = () => {
-        if (window.currentAssetId && confirm('Удалить актив и всю историю?')) {
-            deleteAsset(window.currentAssetId);
-            closeDetailModal();
+        if (currentAssetIdForDetail) {
+            tg.showPopup({
+                title: 'Подтверждение',
+                message: 'Вы точно хотите удалить актив и всю историю?',
+                buttons: [{ type: 'ok', text: 'Удалить' }, { type: 'cancel', text: 'Отмена' }]
+            }, (btnId) => {
+                if (btnId === 'ok') {
+                    deleteAsset(currentAssetIdForDetail, currentPortfolioType);
+                    closeDetailModal();
+                }
+            });
         }
     };
 
     // Инициализация
-    updatePortfolio();
+    initTonConnect();
+    updatePortfolioUI('main');
+    updatePortfolioUI('ton');
 </script>
 </body>
 </html>
