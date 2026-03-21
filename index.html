@@ -438,8 +438,8 @@
     let mainPortfolio = JSON.parse(localStorage.getItem('userPortfolio')) || [];
     let tonPortfolio = JSON.parse(localStorage.getItem('tonPortfolio')) || [];
     let currentPortfolioType = 'main'; // 'main' или 'ton'
-    let currentAssetIdForDetail = null;
-    let currentDetailPortfolioType = null; // запоминаем тип портфеля для открытого актива
+    let currentDetailAssetId = null;
+    let currentDetailType = null;
 
     // Вспомогательные функции
     function savePortfolio(type) {
@@ -539,8 +539,9 @@
         const portfolio = currentPortfolioType === 'main' ? mainPortfolio : tonPortfolio;
         const asset = portfolio.find(a => a.id === assetId);
         if (!asset) return;
-        // Запоминаем тип портфеля для текущего открытого актива
-        currentDetailPortfolioType = currentPortfolioType;
+        // Сохраняем идентификатор и тип портфеля для текущего открытого актива
+        currentDetailAssetId = assetId;
+        currentDetailType = currentPortfolioType;
 
         const assetInfo = assetsCatalog.find(c => c.id === assetId);
         const displayName = assetInfo ? assetInfo.name : assetId.toUpperCase();
@@ -561,14 +562,13 @@
             historyHtml += '<div class="history-item">Нет операций</div>';
         }
         document.getElementById('historyList').innerHTML = historyHtml;
-        currentAssetIdForDetail = assetId;
         document.getElementById('detailModal').style.display = 'flex';
     }
 
     function closeDetailModal() {
         document.getElementById('detailModal').style.display = 'none';
-        currentAssetIdForDetail = null;
-        currentDetailPortfolioType = null;
+        currentDetailAssetId = null;
+        currentDetailType = null;
     }
 
     // Добавление/обновление актива (используется только для добавления нового)
@@ -755,26 +755,24 @@
     document.getElementById('closeModalBtn').onclick = closeAddModal;
     document.getElementById('closeDetailBtn').onclick = closeDetailModal;
 
-    // Редактирование: используем сохранённый тип портфеля для деталей
     document.getElementById('editAssetBtn').onclick = () => {
-        if (currentAssetIdForDetail && currentDetailPortfolioType) {
-            const assetIdToEdit = currentAssetIdForDetail;
-            const portfolioTypeForEdit = currentDetailPortfolioType;
+        if (currentDetailAssetId && currentDetailType) {
+            const assetIdToEdit = currentDetailAssetId;
+            const portfolioTypeForEdit = currentDetailType;
             closeDetailModal();
             openAddModal(portfolioTypeForEdit, assetIdToEdit);
         }
     };
 
-    // Удаление: используем сохранённый тип портфеля для деталей
     document.getElementById('deleteAssetBtn').onclick = () => {
-        if (currentAssetIdForDetail && currentDetailPortfolioType) {
+        if (currentDetailAssetId && currentDetailType) {
             tg.showPopup({
                 title: 'Подтверждение',
                 message: 'Вы точно хотите удалить актив и всю историю?',
                 buttons: [{ type: 'ok', text: 'Удалить' }, { type: 'cancel', text: 'Отмена' }]
             }, (btnId) => {
                 if (btnId === 'ok') {
-                    deleteAsset(currentAssetIdForDetail, currentDetailPortfolioType);
+                    deleteAsset(currentDetailAssetId, currentDetailType);
                     closeDetailModal();
                 }
             });
