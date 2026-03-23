@@ -185,7 +185,7 @@
     tg.ready();
     tg.expand();
 
-    const API_BASE = 'http://5.83.140.252:25671';
+    const API_BASE = 'https://unconfirmative-endocentric-daisy.ngrok-free.dev';
     const BONUS_API_URL = `${API_BASE}/bonuses`;
     const USER_API = (userId) => `${API_BASE}/user/${userId}`;
 
@@ -246,7 +246,9 @@
 
     async function loadUserData() {
         try {
-            const res = await fetch(USER_API(userId));
+            const res = await fetch(USER_API(userId), {
+                headers: { 'ngrok-skip-browser-warning': '1' }
+            });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
             userData = data;
@@ -263,7 +265,10 @@
         try {
             await fetch(USER_API(userId), {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': '1'
+                },
                 body: JSON.stringify(userData)
             });
         } catch (e) {
@@ -445,7 +450,9 @@
         if (!container) return;
         container.innerHTML = 'Загрузка бонусов...';
         try {
-            const res = await fetch(BONUS_API_URL);
+            const res = await fetch(BONUS_API_URL, {
+                headers: { 'ngrok-skip-browser-warning': '1' }
+            });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
             globalBonuses = data;
