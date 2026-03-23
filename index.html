@@ -72,6 +72,7 @@
         .bonus-active{display:inline-block;background:var(--button-bg);color:var(--text-color);border-radius:20px;padding:4px 12px;font-size:12px;margin-top:8px}
         .bonus-summary{background:var(--secondary-bg);border-radius:20px;padding:12px;margin-bottom:16px;border:1px solid var(--separator-color)}
         .bonus-summary-title{font-weight:700;margin-bottom:8px}
+        .remove-bonus-btn{background:#ef4444; padding:2px 8px; font-size:11px; margin-left:8px; width:auto; display:inline-block;}
     </style>
 </head>
 <body>
@@ -575,7 +576,10 @@
                 const bonus = userData.bonuses[assetId]?.[wallet];
                 if (bonus && bonus.amount > 0) {
                     totalBonusUSD += bonus.amount;
-                    html += `<div>🎁 ${assetName} (${wallet === 'main' ? 'Кошелёк' : 'TON'}): ${formatMoney(bonus.amount)}</div>`;
+                    html += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <span>🎁 ${assetName} (${wallet === 'main' ? 'Кошелёк' : 'TON'}): ${formatMoney(bonus.amount)}</span>
+                                <button class="btn remove-bonus-btn" data-asset-id="${assetId}" data-wallet="${wallet}">✖️ Удалить</button>
+                            </div>`;
                 }
             }
         }
@@ -586,6 +590,28 @@
         }
         html += '</div>';
         container.innerHTML = html;
+
+        container.querySelectorAll('.remove-bonus-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const assetId = btn.getAttribute('data-asset-id');
+                const wallet = btn.getAttribute('data-wallet');
+                await removeBonus(assetId, wallet);
+            });
+        });
+    }
+
+    async function removeBonus(assetId, walletType) {
+        if (!userData.bonuses[assetId]) return;
+        if (userData.bonuses[assetId][walletType]) {
+            delete userData.bonuses[assetId][walletType];
+        }
+        if (Object.keys(userData.bonuses[assetId]).length === 0) {
+            delete userData.bonuses[assetId];
+        }
+        await saveUserData();
+        updateUserBonusesDisplay();
+        loadBonuses();
     }
 
     function escapeHtml(str) {
