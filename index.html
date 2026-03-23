@@ -20,8 +20,13 @@
         .tabs{display:flex;gap:12px;margin-bottom:24px;border-bottom:1px solid var(--separator-color);padding-bottom:8px}
         .tab-btn{background:transparent;border:none;font-size:18px;font-weight:600;padding:8px 0;cursor:pointer;color:var(--hint-color);transition:all .2s;flex:1;text-align:center}
         .tab-btn.active{color:var(--text-color);border-bottom:2px solid #3b82f6}
+        .sub-tabs{display:flex;gap:12px;margin-bottom:16px;border-bottom:1px solid var(--separator-color);padding-bottom:8px}
+        .sub-tab-btn{background:transparent;border:none;font-size:14px;font-weight:500;padding:6px 0;cursor:pointer;color:var(--hint-color);transition:all .2s;flex:1;text-align:center}
+        .sub-tab-btn.active{color:var(--text-color);border-bottom:2px solid #3b82f6}
         .tab-content{display:none}
         .tab-content.active{display:block}
+        .bonus-subcontent{display:none}
+        .bonus-subcontent.active{display:block}
         .balance-card{background:var(--secondary-bg);border-radius:28px;padding:20px 16px;margin-bottom:24px;text-align:center;box-shadow:var(--card-shadow);border:1px solid rgba(255,255,255,0.05);position:relative}
         .balance-label{font-size:13px;color:var(--hint-color);letter-spacing:1px;margin-bottom:8px;text-transform:uppercase;font-weight:500}
         .balance-amount{font-size:44px;font-weight:800;letter-spacing:-1px;line-height:1.1}
@@ -123,7 +128,12 @@
             <div class="balance-label">🎁 Доступные бонусы</div>
             <div id="bonusList" style="margin-top: 12px;">Загрузка бонусов...</div>
         </div>
-        <div id="userBonusesSummary" style="margin-top:20px;"></div>
+        <div class="sub-tabs">
+            <button class="sub-tab-btn active" data-subtab="main">💰 Кошелёк</button>
+            <button class="sub-tab-btn" data-subtab="ton">⛓️ TON</button>
+        </div>
+        <div id="mainBonusesSummary" class="bonus-subcontent active" style="margin-top:20px;"></div>
+        <div id="tonBonusesSummary" class="bonus-subcontent" style="margin-top:20px;"></div>
     </div>
 </div>
 
@@ -704,7 +714,7 @@ const assetsCatalog = [
             const data = await res.json();
             globalBonuses = data;
             displayBonuses(data);
-            updateUserBonusesDisplay();
+            updateAllBonusesDisplays();
         } catch (error) {
             console.error(error);
             container.innerHTML = '<div style="color: var(--hint-color); text-align:center;">❌ Не удалось загрузить бонусы.</div>';
@@ -805,12 +815,12 @@ const assetsCatalog = [
         await saveUserData();
         tg.showAlert(`Бонус на ${amount} ${selectedAssetForBonus.name} активирован!`);
         document.getElementById('bonusWalletModal').style.display = 'none';
-        updateUserBonusesDisplay();
+        updateAllBonusesDisplays();
         loadBonuses();
     }
 
-    function updateUserBonusesDisplay() {
-        const container = document.getElementById('userBonusesSummary');
+    function updateWalletBonusesDisplay(walletType) {
+        const container = document.getElementById(`${walletType}BonusesSummary`);
         if (!container) return;
 
         let totalBonusUSD = 0;
@@ -823,31 +833,29 @@ const assetsCatalog = [
             const assetName = assetInfo ? assetInfo.name : assetId;
             const shortName = assetInfo ? assetInfo.short : assetId.toUpperCase();
             const currentPrice = cachedPrices[assetId] || 0;
-            for (const wallet of ['main', 'ton']) {
-                const bonus = userData.bonuses[assetId]?.[wallet];
-                if (bonus && bonus.asset_amount > 0) {
-                    const usdValue = bonus.asset_amount * currentPrice;
-                    totalBonusUSD += usdValue;
-                    activeHtml += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap;">
-                                <span style="flex:1;">🎁 ${assetName} (${wallet === 'main' ? 'Кошелёк' : 'TON'}): ${bonus.asset_amount.toFixed(6)} ${shortName} ≈ ${formatMoney(usdValue)}</span>
-                                <button class="btn remove-bonus-btn" data-asset-id="${assetId}" data-wallet="${wallet}">✖️ Удалить</button>
-                            </div>`;
+            const bonus = userData.bonuses[assetId]?.[walletType];
+            if (bonus && bonus.asset_amount > 0) {
+                const usdValue = bonus.asset_amount * currentPrice;
+                totalBonusUSD += usdValue;
+                activeHtml += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap;">
+                            <span style="flex:1;">🎁 ${assetName}: ${bonus.asset_amount.toFixed(6)} ${shortName} ≈ ${formatMoney(usdValue)}</span>
+                            <button class="btn remove-bonus-btn" data-asset-id="${assetId}" data-wallet="${walletType}">✖️ Удалить</button>
+                        </div>`;
 
-                    const earnedAmount = bonus.asset_amount - (bonus.base_asset_amount || 0);
-                    if (earnedAmount > 0) {
-                        const earnedUsd = earnedAmount * currentPrice;
-                        totalEarnedUSD += earnedUsd;
-                        earningsHtml += `<div style="margin-bottom: 6px;">💰 ${assetName} (${shortName}): +${earnedAmount.toFixed(6)} ${shortName} ≈ ${formatMoney(earnedUsd)}</div>`;
-                    }
+                const earnedAmount = bonus.asset_amount - (bonus.base_asset_amount || 0);
+                if (earnedAmount > 0) {
+                    const earnedUsd = earnedAmount * currentPrice;
+                    totalEarnedUSD += earnedUsd;
+                    earningsHtml += `<div style="margin-bottom: 6px;">💰 ${assetName} (${shortName}): +${earnedAmount.toFixed(6)} ${shortName} ≈ ${formatMoney(earnedUsd)}</div>`;
                 }
             }
         }
 
         let html = '';
         if (activeHtml) {
-            html += `<div class="bonus-summary"><div class="bonus-summary-title">📊 Ваши активные бонусы</div>${activeHtml}<div style="margin-top:8px;"><strong>Общая сумма бонусов: ${formatMoney(totalBonusUSD)}</strong></div></div>`;
+            html += `<div class="bonus-summary"><div class="bonus-summary-title">📊 Активные бонусы</div>${activeHtml}<div style="margin-top:8px;"><strong>Общая сумма: ${formatMoney(totalBonusUSD)}</strong></div></div>`;
         } else {
-            html += `<div class="bonus-summary"><div class="bonus-summary-title">📊 Ваши активные бонусы</div><div>У вас пока нет активных бонусов. Выберите бонус и активируйте его!</div></div>`;
+            html += `<div class="bonus-summary"><div class="bonus-summary-title">📊 Активные бонусы</div><div>У вас пока нет активных бонусов. Выберите бонус и активируйте его!</div></div>`;
         }
 
         if (earningsHtml) {
@@ -866,6 +874,11 @@ const assetsCatalog = [
         });
     }
 
+    function updateAllBonusesDisplays() {
+        updateWalletBonusesDisplay('main');
+        updateWalletBonusesDisplay('ton');
+    }
+
     async function removeBonus(assetId, walletType) {
         if (!userData.bonuses[assetId]) return;
         if (userData.bonuses[assetId][walletType]) {
@@ -875,7 +888,7 @@ const assetsCatalog = [
             delete userData.bonuses[assetId];
         }
         await saveUserData();
-        updateUserBonusesDisplay();
+        updateAllBonusesDisplays();
         loadBonuses();
     }
 
@@ -982,7 +995,7 @@ const assetsCatalog = [
     applyTheme(curTheme);
     document.getElementById('themeToggleBtn').addEventListener('click', () => applyTheme(curTheme === 'dark' ? 'light' : 'dark'));
 
-    // --- Переключение вкладок ---
+    // --- Переключение основных вкладок ---
     function switchTab(tabId) {
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -991,11 +1004,23 @@ const assetsCatalog = [
         currentPortfolioType = tabId;
         if (tabId === 'bonus') {
             loadBonuses();
+            updateAllBonusesDisplays();
         } else {
             updatePortfolioUI(tabId);
         }
     }
     document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab'))));
+
+    // --- Переключение подвкладок бонусов ---
+    function switchBonusSubtab(subtabId) {
+        document.querySelectorAll('.sub-tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`.sub-tab-btn[data-subtab="${subtabId}"]`).classList.add('active');
+        document.querySelectorAll('.bonus-subcontent').forEach(c => c.classList.remove('active'));
+        document.getElementById(`${subtabId}BonusesSummary`).classList.add('active');
+    }
+    document.querySelectorAll('.sub-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchBonusSubtab(btn.getAttribute('data-subtab')));
+    });
 
     document.getElementById('openMainModalBtn').onclick = () => openAddModal('main');
     document.getElementById('openTonModalBtn').onclick = () => openAddModal('ton');
@@ -1022,7 +1047,6 @@ const assetsCatalog = [
     document.getElementById('closeBonusModalBtn').onclick = () => document.getElementById('bonusWalletModal').style.display = 'none';
     document.getElementById('confirmBonusBtn').onclick = confirmBonusActivation;
     
-    // MAX button handler
     document.getElementById('maxBonusAmountBtn').addEventListener('click', () => {
         const maxSpan = document.getElementById('maxAmountSpan');
         const maxVal = parseFloat(maxSpan.innerText);
@@ -1036,6 +1060,7 @@ const assetsCatalog = [
         await updatePortfolioUI('main');
         await updatePortfolioUI('ton');
         await loadBonuses();
+        updateAllBonusesDisplays();
     })();
 </script>
 </body>
