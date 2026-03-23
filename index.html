@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>RealWalletProfit | Элитный портфель</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background-color:var(--bg-color,#0a0a0a);color:var(--text-color,#fff);padding:12px 12px 32px;min-height:100vh;transition:background-color .3s,color .3s}
+        @media(max-width:400px){body{padding:8px 10px 24px}.balance-amount{font-size:38px}.modal-content{padding:20px 16px 32px}.btn{padding:12px;font-size:14px}.asset-name,.asset-value{font-size:16px}.asset-details{font-size:12px;flex-wrap:wrap}}
+        body.light{--bg-color:#f5f7fa;--secondary-bg:#fff;--text-color:#1e293b;--hint-color:#64748b;--separator-color:rgba(0,0,0,0.08);--button-bg:#0f172a;--button-text:#fff;--card-shadow:0 10px 25px -5px rgba(0,0,0,0.05),0 8px 10px -6px rgba(0,0,0,0.02);--invested-bg:rgba(0,0,0,0.04);--invested-color:#334155}
+        body.dark{--bg-color:#0f172a;--secondary-bg:#1e293b;--text-color:#f1f5f9;--hint-color:#94a3b8;--separator-color:rgba(255,255,255,0.1);--button-bg:#2d3a5e;--button-text:#fff;--card-shadow:0 10px 25px -5px rgba(0,0,0,0.3),0 8px 10px -6px rgba(0,0,0,0.2);--invested-bg:rgba(148,163,184,0.15);--invested-color:#cbd5e1}
+        body{background-color:var(--bg-color);color:var(--text-color)}
+        .container{max-width:520px;margin:0 auto}
+        .app-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+        .app-title h1{font-size:24px;font-weight:800;background:linear-gradient(135deg,#c084fc,#60a5fa);-webkit-background-clip:text;color:transparent;letter-spacing:-.5px}
+        .app-title p{font-size:11px;color:var(--hint-color);margin-top:2px}
+        .theme-toggle{background:var(--secondary-bg);border:none;border-radius:40px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;transition:all .2s;color:var(--text-color);box-shadow:var(--card-shadow)}
+        .tabs{display:flex;gap:12px;margin-bottom:24px;border-bottom:1px solid var(--separator-color);padding-bottom:8px}
+        .tab-btn{background:transparent;border:none;font-size:18px;font-weight:600;padding:8px 0;cursor:pointer;color:var(--hint-color);transition:all .2s;flex:1;text-align:center}
+        .tab-btn.active{color:var(--text-color);border-bottom:2px solid #3b82f6}
+        .tab-content{display:none}
+        .tab-content.active{display:block}
+        .balance-card{background:var(--secondary-bg);border-radius:28px;padding:20px 16px;margin-bottom:24px;text-align:center;box-shadow:var(--card-shadow);border:1px solid rgba(255,255,255,0.05);position:relative}
+        .balance-label{font-size:13px;color:var(--hint-color);letter-spacing:1px;margin-bottom:8px;text-transform:uppercase;font-weight:500}
+        .balance-amount{font-size:44px;font-weight:800;letter-spacing:-1px;line-height:1.1}
+        .profit-badge{display:inline-block;padding:6px 14px;border-radius:40px;font-size:13px;font-weight:600;margin-top:12px}
+        .positive{background:linear-gradient(135deg,rgba(34,197,94,0.2),rgba(34,197,94,0.05));color:#22c55e}
+        .negative{background:linear-gradient(135deg,rgba(239,68,68,0.2),rgba(239,68,68,0.05));color:#ef4444}
+        .invested-badge{display:inline-block;padding:6px 14px;border-radius:40px;font-size:12px;font-weight:500;background:var(--invested-bg);color:var(--invested-color);margin-top:8px}
+        .stale-indicator{position:absolute;top:16px;right:16px;font-size:18px;animation:spin 1s linear infinite;opacity:.7;cursor:help;display:none}
+        @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+        .stale-indicator.show{display:inline-block}
+        .assets-header{font-size:18px;font-weight:700;margin-bottom:16px;margin-top:4px;display:flex;justify-content:space-between;align-items:baseline}
+        .asset-list{display:flex;flex-direction:column;gap:10px;margin-bottom:28px}
+        .asset-card{background:var(--secondary-bg);border-radius:20px;padding:14px;transition:transform .2s,box-shadow .2s;cursor:pointer;box-shadow:var(--card-shadow);border:1px solid rgba(255,255,255,0.05)}
+        .asset-card:hover{transform:translateY(-2px)}
+        .asset-main{display:flex;justify-content:space-between;align-items:center}
+        .asset-name{font-weight:700;font-size:17px;background:linear-gradient(135deg,#e2e8f0,#cbd5e1);-webkit-background-clip:text;color:transparent}
+        .asset-value{font-weight:700;font-size:17px}
+        .asset-details{display:flex;gap:12px;margin-top:8px;font-size:12px;color:var(--hint-color)}
+        .asset-pnl{font-weight:600;font-size:12px}
+        .pnl-pos{color:#22c55e}
+        .pnl-neg{color:#ef4444}
+        .btn{width:100%;background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;border:none;border-radius:40px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1)}
+        .btn:active{transform:scale(.98)}
+        .btn-secondary{background:var(--button-bg);color:var(--button-text);border:1px solid var(--separator-color)}
+        .modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:200;justify-content:center;align-items:flex-end}
+        .modal-content{background:var(--secondary-bg);width:100%;border-radius:28px 28px 0 0;padding:24px 20px 32px;max-height:90vh;overflow-y:auto}
+        .modal-title{font-size:22px;font-weight:700;margin-bottom:18px}
+        .input-group{margin-bottom:18px}
+        .input-group label{display:block;font-size:13px;color:var(--hint-color);margin-bottom:6px;font-weight:500}
+        .input-group input{width:100%;padding:12px;border-radius:18px;border:1px solid var(--separator-color);background:var(--bg-color);color:var(--text-color);font-size:15px;outline:none}
+        .autocomplete-container{position:relative}
+        .autocomplete-suggestions{position:absolute;top:100%;left:0;right:0;background:var(--secondary-bg);border-radius:18px;max-height:180px;overflow-y:auto;z-index:10;box-shadow:var(--card-shadow)}
+        .autocomplete-suggestion{padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--separator-color)}
+        .autocomplete-suggestion:hover{background:var(--button-bg);color:#fff}
+        .modal-buttons{display:flex;gap:12px;margin-top:24px}
+        .btn-cancel{background:var(--bg-color);color:var(--text-color);border:1px solid var(--separator-color)}
+        .history-list{margin-top:16px;border-top:1px solid var(--separator-color);padding-top:12px}
+        .history-item{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--separator-color);font-size:13px}
+        .history-date{color:var(--hint-color)}
+        .delete-btn{background:#ef4444}
+        .bonus-card{background:var(--secondary-bg);border-radius:20px;padding:16px;margin-bottom:12px;box-shadow:var(--card-shadow);border:1px solid var(--separator-color);transition:transform .2s}
+        .bonus-card:hover{transform:translateY(-2px)}
+        .bonus-name{font-weight:800;font-size:18px;margin-bottom:8px;background:linear-gradient(135deg,#f97316,#facc15);-webkit-background-clip:text;color:transparent}
+        .bonus-details{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--hint-color);margin-top:8px}
+        .bonus-detail{background:var(--bg-color);padding:4px 12px;border-radius:20px}
+        .bonus-short{font-family:monospace;background:var(--button-bg);display:inline-block;padding:2px 8px;border-radius:12px;margin-left:8px;font-size:12px}
+        .bonus-action-btn{background:linear-gradient(135deg,#10b981,#059669);margin-top:12px;padding:8px;font-size:13px}
+        .bonus-active{display:inline-block;background:var(--button-bg);color:var(--text-color);border-radius:20px;padding:4px 12px;font-size:12px;margin-top:8px}
+        .bonus-summary{background:var(--secondary-bg);border-radius:20px;padding:12px;margin-bottom:16px;border:1px solid var(--separator-color)}
+        .bonus-summary-title{font-weight:700;margin-bottom:8px}
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="app-header">
+        <div class="app-title">
+            <h1>RealWalletProfit</h1>
+            <p>Удобный трекинг окупаемости вашего криптопортфеля</p>
+        </div>
+        <button id="themeToggleBtn" class="theme-toggle">🌙</button>
+    </div>
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="main">💰 Кошелёк</button>
+        <button class="tab-btn" data-tab="ton">⛓️ TON</button>
+        <button class="tab-btn" data-tab="bonus">🎁 Бонусы</button>
+    </div>
+    <div id="mainTab" class="tab-content active">
+        <div class="balance-card" id="mainBalanceCard">
+            <div class="balance-label">Общая стоимость портфеля</div>
+            <div class="balance-amount" id="mainTotalBalance">$0.00</div>
+            <div class="profit-badge" id="mainTotalProfit">Загрузка...</div>
+            <div class="invested-badge" id="mainTotalInvestedBadge">Общая сумма инвестиций: $0.00</div>
+            <div class="stale-indicator" id="mainStaleIndicator" title="Данные могут быть устаревшими">⏳</div>
+        </div>
+        <div class="assets-header"><span>Активы</span></div>
+        <div class="asset-list" id="mainAssetList"></div>
+        <button class="btn" id="openMainModalBtn">➕ Добавить актив</button>
+    </div>
+    <div id="tonTab" class="tab-content">
+        <div class="balance-card" id="tonBalanceCard">
+            <div class="balance-label">Общая стоимость TON портфеля</div>
+            <div class="balance-amount" id="tonTotalBalance">$0.00</div>
+            <div class="profit-badge" id="tonTotalProfit">Загрузка...</div>
+            <div class="invested-badge" id="tonTotalInvestedBadge">Общая сумма инвестиций: $0.00</div>
+            <div class="stale-indicator" id="tonStaleIndicator" title="Данные могут быть устаревшими">⏳</div>
+        </div>
+        <div class="assets-header"><span>Активы (TON портфель)</span></div>
+        <div class="asset-list" id="tonAssetList"></div>
+        <button class="btn" id="openTonModalBtn">➕ Добавить актив в TON</button>
+    </div>
+    <div id="bonusTab" class="tab-content">
+        <div class="balance-card" style="text-align: left;">
+            <div class="balance-label">🎁 Доступные бонусы</div>
+            <div id="bonusList" style="margin-top: 12px;">Загрузка бонусов...</div>
+        </div>
+        <div id="userBonusesSummary" style="margin-top:20px;"></div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="bonusWalletModal">
+    <div class="modal-content">
+        <div class="modal-title" id="bonusModalTitle">Выбор кошелька</div>
+        <div class="input-group">
+            <label>Выберите кошелёк</label>
+            <div style="display:flex; gap:12px; margin-top:8px;">
+                <button class="btn btn-secondary" id="selectMainWalletBtn" style="flex:1;">💰 Основной</button>
+                <button class="btn btn-secondary" id="selectTonWalletBtn" style="flex:1;">⛓️ TON</button>
+            </div>
+        </div>
+        <div id="bonusWalletInfo" style="margin-bottom:16px;"></div>
+        <div class="input-group">
+            <label>Количество актива для бонуса (макс: <span id="maxAmountSpan">0</span>)</label>
+            <input type="number" id="bonusAmountInput" placeholder="0.00" step="any">
+        </div>
+        <div class="modal-buttons">
+            <button class="btn btn-cancel" id="closeBonusModalBtn">Отмена</button>
+            <button class="btn" id="confirmBonusBtn">Активировать бонус</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="addModal">
+    <div class="modal-content">
+        <div class="modal-title" id="modalTitle">Новый актив</div>
+        <div class="input-group">
+            <label>Поиск актива</label>
+            <div class="autocomplete-container">
+                <input type="text" id="assetSearchInput" placeholder="Bitcoin, Ethereum, TON..." autocomplete="off">
+                <div id="suggestionsList" class="autocomplete-suggestions" style="display: none;"></div>
+            </div>
+        </div>
+        <div class="input-group">
+            <label>Количество</label>
+            <input type="number" id="coinAmountInput" placeholder="0.00" step="any">
+        </div>
+        <div class="input-group">
+            <label>Всего потрачено ($)</label>
+            <input type="number" id="coinSpentInput" placeholder="0.00" step="any">
+        </div>
+        <div class="modal-buttons">
+            <button class="btn btn-cancel" id="closeModalBtn">Отмена</button>
+            <button class="btn" id="saveAssetBtn">Сохранить</button>
+        </div>
+    </div>
+</div>
+<div class="modal-overlay" id="detailModal">
+    <div class="modal-content">
+        <div class="modal-title" id="detailTitle"></div>
+        <div id="detailContent"></div>
+        <div class="history-list" id="historyList"></div>
+        <div class="modal-buttons" style="margin-top:20px">
+            <button class="btn btn-cancel" id="closeDetailBtn">Закрыть</button>
+            <button class="btn" id="editAssetBtn">Редактировать</button>
+            <button class="btn delete-btn" id="deleteAssetBtn">Удалить актив</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+
+    const API_BASE = 'http://5.83.140.252:25671';
+    const BONUS_API_URL = `${API_BASE}/bonuses`;
+    const USER_API = (userId) => `${API_BASE}/user/${userId}`;
+
+    let userId = null;
+    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+        userId = tg.initDataUnsafe.user.id;
+    } else {
+        userId = Math.floor(Math.random() * 1000000);
+    }
+
+    const assetsCatalog = [
+        {id:"bitcoin",name:"Bitcoin (BTC)",short:"BTC",keywords:["bitcoin","btc","биткоин"]},
+        {id:"ethereum",name:"Ethereum (ETH)",short:"ETH",keywords:["ethereum","eth","эфир"]},
+        {id:"the-open-network",name:"TON (Toncoin)",short:"TON",keywords:["ton","toncoin","тон"]},
+        {id:"solana",name:"Solana (SOL)",short:"SOL",keywords:["solana","sol"]},
+        {id:"binancecoin",name:"BNB",short:"BNB",keywords:["bnb","binance"]},
+        {id:"ripple",name:"XRP",short:"XRP",keywords:["xrp","ripple"]},
+        {id:"dogecoin",name:"Dogecoin (DOGE)",short:"DOGE",keywords:["dogecoin","doge"]},
+        {id:"cardano",name:"Cardano (ADA)",short:"ADA",keywords:["cardano","ada"]},
+        {id:"avalanche-2",name:"Avalanche (AVAX)",short:"AVAX",keywords:["avalanche","avax"]},
+        {id:"polygon-ecosystem-token",name:"Polygon (MATIC)",short:"MATIC",keywords:["polygon","matic"]},
+        {id:"chainlink",name:"Chainlink (LINK)",short:"LINK",keywords:["chainlink","link"]},
+        {id:"uniswap",name:"Uniswap (UNI)",short:"UNI",keywords:["uniswap","uni"]},
+        {id:"litecoin",name:"Litecoin (LTC)",short:"LTC",keywords:["litecoin","ltc"]},
+        {id:"tether",name:"Tether (USDT)",short:"USDT",keywords:["tether","usdt"]},
+        {id:"usd-coin",name:"USD Coin (USDC)",short:"USDC",keywords:["usdc"]},
+        {id:"tether-gold",name:"Tether Gold (XAUt)",short:"XAUT",keywords:["tether gold","xaut"]},
+        {id:"stellar",name:"Stellar (XLM)",short:"XLM",keywords:["stellar","xlm"]},
+        {id:"cosmos",name:"Cosmos (ATOM)",short:"ATOM",keywords:["cosmos","atom"]},
+        {id:"near",name:"NEAR Protocol (NEAR)",short:"NEAR",keywords:["near"]},
+        {id:"algorand",name:"Algorand (ALGO)",short:"ALGO",keywords:["algorand","algo"]},
+        {id:"filecoin",name:"Filecoin (FIL)",short:"FIL",keywords:["filecoin","fil"]},
+        {id:"theta-token",name:"Theta (THETA)",short:"THETA",keywords:["theta"]},
+        {id:"vechain",name:"VeChain (VET)",short:"VET",keywords:["vechain","vet"]},
+        {id:"eos",name:"EOS",short:"EOS",keywords:["eos"]},
+        {id:"tezos",name:"Tezos (XTZ)",short:"XTZ",keywords:["tezos","xtz"]},
+        {id:"aave",name:"Aave (AAVE)",short:"AAVE",keywords:["aave"]},
+        {id:"maker",name:"Maker (MKR)",short:"MKR",keywords:["maker","mkr"]},
+        {id:"compound-governance-token",name:"Compound (COMP)",short:"COMP",keywords:["compound","comp"]},
+        {id:"yearn-finance",name:"Yearn.finance (YFI)",short:"YFI",keywords:["yearn","yfi"]},
+        {id:"pancakeswap-token",name:"PancakeSwap (CAKE)",short:"CAKE",keywords:["pancake","cake"]},
+        {id:"adi-token",name:"ADI (ADI)",short:"ADI",keywords:["adi","ади"]},
+        {id:"monad",name:"Monad (MON)",short:"MON",keywords:["monad","mon"]}
+    ];
+
+    let userData = { main: [], ton: [], bonuses: {}, lastBonusCheck: null };
+    let cachedPrices = {};
+    let lastFetchTime = 0;
+    const FETCH_INTERVAL = 10000;
+
+    let currentPortfolioType = 'main';
+    let currentDetailAssetId = null;
+    let currentDetailType = null;
+
+    let currentBonusToActivate = null;
+    let selectedBonusWallet = null;
+    let selectedAssetForBonus = null;
+
+    async function loadUserData() {
+        try {
+            const res = await fetch(USER_API(userId));
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            userData = data;
+            if (!userData.main) userData.main = [];
+            if (!userData.ton) userData.ton = [];
+            if (!userData.bonuses) userData.bonuses = {};
+        } catch (e) {
+            console.error('Ошибка загрузки данных пользователя', e);
+            userData = { main: [], ton: [], bonuses: {}, lastBonusCheck: null };
+        }
+    }
+
+    async function saveUserData() {
+        try {
+            await fetch(USER_API(userId), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(userData)
+            });
+        } catch (e) {
+            console.error('Ошибка сохранения данных пользователя', e);
+        }
+    }
+
+    function formatMoney(amount) {
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+    }
+
+    function renderPortfolioData(type) {
+        const portfolio = type === 'main' ? userData.main : userData.ton;
+        if (!portfolio.length) {
+            return {
+                assetListHtml: '<div style="text-align:center;padding:28px;color:var(--hint-color);">Портфель пуст. Добавьте активы ➕</div>',
+                totalBalance: '$0.00',
+                totalInvested: 0,
+                profitHtml: 'Нет данных',
+                profitClass: 'profit-badge'
+            };
+        }
+        let totalCurrent = 0, totalInvested = 0, html = '';
+        for (const asset of portfolio) {
+            const price = cachedPrices[asset.id] || 0;
+            const currentValue = asset.amount * price;
+            totalCurrent += currentValue;
+            totalInvested += asset.investedUSD;
+            const pnl = currentValue - asset.investedUSD;
+            const pnlClass = pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
+            const pnlSign = pnl >= 0 ? '+' : '';
+            const info = assetsCatalog.find(c => c.id === asset.id);
+            const name = info ? info.name : asset.id.toUpperCase();
+            html += `
+                <div class="asset-card" data-id="${asset.id}" data-type="${type}">
+                    <div class="asset-main">
+                        <span class="asset-name">${escapeHtml(name)}</span>
+                        <span class="asset-value">${formatMoney(currentValue)}</span>
+                    </div>
+                    <div class="asset-details">
+                        <span>${asset.amount} шт.</span>
+                        <span>цена: ${formatMoney(price)}</span>
+                    </div>
+                    <div class="asset-pnl ${pnlClass}" style="margin-top:6px;">${pnlSign}${formatMoney(pnl)}</div>
+                </div>
+            `;
+        }
+        const totalPnL = totalCurrent - totalInvested;
+        let profitHtml, profitClass;
+        if (totalPnL >= 0) {
+            profitClass = 'profit-badge positive';
+            profitHtml = `+${formatMoney(totalPnL)} чистой прибыли`;
+        } else {
+            profitClass = 'profit-badge negative';
+            profitHtml = `${formatMoney(totalPnL)} убытка`;
+        }
+        return { assetListHtml: html, totalBalance: formatMoney(totalCurrent), totalInvested, profitHtml, profitClass };
+    }
+
+    function applySnapshot(type, snap) {
+        const assetList = document.getElementById(type === 'main' ? 'mainAssetList' : 'tonAssetList');
+        const totalBal = document.getElementById(type === 'main' ? 'mainTotalBalance' : 'tonTotalBalance');
+        const profit = document.getElementById(type === 'main' ? 'mainTotalProfit' : 'tonTotalProfit');
+        const invested = document.getElementById(type === 'main' ? 'mainTotalInvestedBadge' : 'tonTotalInvestedBadge');
+        if (assetList) assetList.innerHTML = snap.assetListHtml;
+        if (totalBal) totalBal.innerText = snap.totalBalance;
+        if (invested) invested.innerHTML = `Общая сумма инвестиций: ${formatMoney(snap.totalInvested)}`;
+        if (profit) {
+            profit.className = snap.profitClass;
+            profit.innerText = snap.profitHtml;
+        }
+        document.querySelectorAll(`.asset-card[data-type="${type}"]`).forEach(card => {
+            card.removeEventListener('click', handleAssetClick);
+            card.addEventListener('click', handleAssetClick);
+        });
+    }
+
+    async function updatePortfolioUI(type, forceFetch = false) {
+        const portfolio = type === 'main' ? userData.main : userData.ton;
+        const now = Date.now();
+        const shouldFetch = forceFetch || (portfolio.length > 0 && (now - lastFetchTime >= FETCH_INTERVAL));
+        if (shouldFetch && portfolio.length) {
+            const ids = portfolio.map(a => a.id).join(',');
+            try {
+                const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`);
+                if (res.ok) {
+                    const prices = await res.json();
+                    for (const asset of portfolio) {
+                        if (prices[asset.id]?.usd !== undefined) {
+                            cachedPrices[asset.id] = prices[asset.id].usd;
+                        }
+                    }
+                    lastFetchTime = now;
+                }
+            } catch (e) {}
+        }
+        const snapshot = renderPortfolioData(type);
+        applySnapshot(type, snapshot);
+    }
+
+    function handleAssetClick(e) {
+        const card = e.currentTarget;
+        const id = card.getAttribute('data-id');
+        const type = card.getAttribute('data-type');
+        currentPortfolioType = type;
+        showAssetDetails(id);
+    }
+
+    function showAssetDetails(assetId) {
+        const portfolio = currentPortfolioType === 'main' ? userData.main : userData.ton;
+        const asset = portfolio.find(a => a.id === assetId);
+        if (!asset) return;
+        currentDetailAssetId = assetId;
+        currentDetailType = currentPortfolioType;
+        const info = assetsCatalog.find(c => c.id === assetId);
+        const name = info ? info.name : assetId.toUpperCase();
+        document.getElementById('detailTitle').innerText = name;
+        let html = '<h4 style="margin-bottom:10px;">История операций</h4>';
+        if (asset.history?.length) {
+            [...asset.history].reverse().forEach(h => {
+                const sign = h.amountDelta >= 0 ? '+' : '';
+                html += `<div class="history-item"><div>${h.date}</div><div>${sign}${h.amountDelta} шт. ($${Math.abs(h.investedDelta).toFixed(2)})</div></div>`;
+            });
+        } else html += '<div class="history-item">Нет операций</div>';
+        document.getElementById('historyList').innerHTML = html;
+        document.getElementById('detailModal').style.display = 'flex';
+    }
+
+    function closeDetailModal() {
+        document.getElementById('detailModal').style.display = 'none';
+        currentDetailAssetId = null;
+        currentDetailType = null;
+    }
+
+    async function addOrUpdateAsset(assetId, amountDelta, investedDelta, type) {
+        const portfolio = type === 'main' ? userData.main : userData.ton;
+        const now = new Date().toLocaleString();
+        const existing = portfolio.find(a => a.id === assetId);
+        if (existing) {
+            existing.amount += amountDelta;
+            existing.investedUSD += investedDelta;
+            existing.history.push({ date: now, amountDelta, investedDelta, type: 'add' });
+        } else {
+            portfolio.push({ id: assetId, amount: amountDelta, investedUSD: investedDelta, history: [{ date: now, amountDelta, investedDelta, type: 'add' }] });
+        }
+        await saveUserData();
+        updatePortfolioUI(type, true);
+    }
+
+    async function deleteAsset(assetId, type) {
+        if (type === 'main') {
+            userData.main = userData.main.filter(a => a.id !== assetId);
+        } else {
+            userData.ton = userData.ton.filter(a => a.id !== assetId);
+        }
+        await saveUserData();
+        updatePortfolioUI(type, true);
+    }
+
+    async function editAsset(assetId, newAmount, newInvested, type) {
+        const portfolio = type === 'main' ? userData.main : userData.ton;
+        const asset = portfolio.find(a => a.id === assetId);
+        if (asset) {
+            const amountDelta = newAmount - asset.amount;
+            const investedDelta = newInvested - asset.investedUSD;
+            asset.amount = newAmount;
+            asset.investedUSD = newInvested;
+            asset.history.push({ date: new Date().toLocaleString(), amountDelta, investedDelta, type: 'edit' });
+            await saveUserData();
+            updatePortfolioUI(type, true);
+        }
+    }
+
+    // --- Бонусы ---
+    let globalBonuses = {};
+
+    async function loadBonuses() {
+        const container = document.getElementById('bonusList');
+        if (!container) return;
+        container.innerHTML = 'Загрузка бонусов...';
+        try {
+            const res = await fetch(BONUS_API_URL);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            globalBonuses = data;
+            displayBonuses(data);
+            updateUserBonusesDisplay();
+        } catch (error) {
+            console.error(error);
+            container.innerHTML = '<div style="color: var(--hint-color); text-align:center;">❌ Не удалось загрузить бонусы.</div>';
+        }
+    }
+
+    function displayBonuses(bonuses) {
+        const container = document.getElementById('bonusList');
+        if (!container) return;
+        if (Object.keys(bonuses).length === 0) {
+            container.innerHTML = '<div style="color: var(--hint-color); text-align:center;">Бонусов пока нет.</div>';
+            return;
+        }
+        let html = '<div style="display:flex; flex-direction:column; gap:12px;">';
+        for (const [name, data] of Object.entries(bonuses)) {
+            const matchedAsset = assetsCatalog.find(asset => asset.short && asset.short.toUpperCase() === data.short.toUpperCase());
+            const hasAssetInPortfolio = matchedAsset ? (userData.main.some(a => a.id === matchedAsset.id) || userData.ton.some(a => a.id === matchedAsset.id)) : false;
+            const reducedInfo = (data.reduced_percent !== null && data.limit !== null) ? `<div class="bonus-detail">📉 Уменьшенный: ${data.reduced_percent}% (до ${data.limit})</div>` : '';
+            const compoundInfo = `<div class="bonus-detail">🔄 Сложный процент: ${data.compound ? 'Да' : 'Нет'}</div>`;
+            html += `
+                <div class="bonus-card" data-bonus-name="${escapeHtml(name)}" data-bonus-short="${escapeHtml(data.short)}">
+                    <div class="bonus-name">${escapeHtml(name)} <span class="bonus-short">${escapeHtml(data.short)}</span></div>
+                    <div class="bonus-details">
+                        <div class="bonus-detail">💰 Процент: ${data.percent}%</div>
+                        ${reducedInfo}
+                        ${compoundInfo}
+                    </div>
+                    ${hasAssetInPortfolio ? `<button class="btn bonus-action-btn" data-bonus-name="${escapeHtml(name)}" data-bonus-short="${escapeHtml(data.short)}">➕ Активировать бонус</button>` : '<div class="bonus-active">Нет актива в портфеле</div>'}
+                </div>
+            `;
+        }
+        html += '</div>';
+        container.innerHTML = html;
+
+        document.querySelectorAll('.bonus-action-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const bonusName = btn.getAttribute('data-bonus-name');
+                const bonusShort = btn.getAttribute('data-bonus-short');
+                const bonusData = globalBonuses[bonusName];
+                if (bonusData) {
+                    currentBonusToActivate = { name: bonusName, short: bonusShort, ...bonusData };
+                    showBonusWalletSelection();
+                }
+            });
+        });
+    }
+
+    function showBonusWalletSelection() {
+        document.getElementById('bonusModalTitle').innerText = `Активация бонуса ${currentBonusToActivate.name}`;
+        document.getElementById('bonusWalletInfo').innerHTML = '';
+        document.getElementById('bonusAmountInput').value = '';
+        document.getElementById('maxAmountSpan').innerText = '0';
+        document.getElementById('bonusWalletModal').style.display = 'flex';
+        selectedBonusWallet = null;
+        selectedAssetForBonus = null;
+    }
+
+    function selectBonusWallet(wallet) {
+        selectedBonusWallet = wallet;
+        const matchedAsset = assetsCatalog.find(asset => asset.short && asset.short.toUpperCase() === currentBonusToActivate.short.toUpperCase());
+        if (!matchedAsset) {
+            tg.showAlert('Не удалось сопоставить актив с бонусом');
+            return;
+        }
+        selectedAssetForBonus = matchedAsset;
+        const availableAmount = wallet === 'main'
+            ? (userData.main.find(a => a.id === matchedAsset.id)?.amount || 0)
+            : (userData.ton.find(a => a.id === matchedAsset.id)?.amount || 0);
+        document.getElementById('bonusWalletInfo').innerHTML = `<div>Доступно в ${wallet === 'main' ? 'кошельке' : 'TON портфеле'}: ${availableAmount} ${matchedAsset.name}</div>`;
+        document.getElementById('maxAmountSpan').innerText = availableAmount;
+        document.getElementById('bonusAmountInput').max = availableAmount;
+    }
+
+    async function confirmBonusActivation() {
+        if (!selectedBonusWallet || !selectedAssetForBonus) {
+            tg.showAlert('Выберите кошелёк');
+            return;
+        }
+        const amount = parseFloat(document.getElementById('bonusAmountInput').value);
+        const maxAmount = parseFloat(document.getElementById('maxAmountSpan').innerText);
+        if (isNaN(amount) || amount <= 0 || amount > maxAmount) {
+            tg.showAlert('Введите корректное количество');
+            return;
+        }
+        const price = cachedPrices[selectedAssetForBonus.id] || 0;
+        if (price === 0) {
+            tg.showAlert('Не удалось получить цену актива');
+            return;
+        }
+        const bonusUSD = amount * price;
+        if (!userData.bonuses[selectedAssetForBonus.id]) userData.bonuses[selectedAssetForBonus.id] = { main: null, ton: null };
+        if (!userData.bonuses[selectedAssetForBonus.id][selectedBonusWallet]) {
+            userData.bonuses[selectedAssetForBonus.id][selectedBonusWallet] = { amount: 0, base_amount: 0, lastDate: null };
+        }
+        const bonus = userData.bonuses[selectedAssetForBonus.id][selectedBonusWallet];
+        bonus.amount += bonusUSD;
+        bonus.base_amount += bonusUSD;
+        await saveUserData();
+        tg.showAlert(`Бонус на сумму ${formatMoney(bonusUSD)} активирован!`);
+        document.getElementById('bonusWalletModal').style.display = 'none';
+        updateUserBonusesDisplay();
+        loadBonuses();
+    }
+
+    function updateUserBonusesDisplay() {
+        const container = document.getElementById('userBonusesSummary');
+        if (!container) return;
+        let totalBonusUSD = 0;
+        let html = '<div class="bonus-summary"><div class="bonus-summary-title">📊 Ваши активные бонусы</div>';
+        for (const assetId in userData.bonuses) {
+            const assetInfo = assetsCatalog.find(a => a.id === assetId);
+            const assetName = assetInfo ? assetInfo.name : assetId;
+            for (const wallet of ['main', 'ton']) {
+                const bonus = userData.bonuses[assetId]?.[wallet];
+                if (bonus && bonus.amount > 0) {
+                    totalBonusUSD += bonus.amount;
+                    html += `<div>🎁 ${assetName} (${wallet === 'main' ? 'Кошелёк' : 'TON'}): ${formatMoney(bonus.amount)}</div>`;
+                }
+            }
+        }
+        if (totalBonusUSD === 0) {
+            html += '<div>У вас пока нет активных бонусов. Выберите бонус и активируйте его!</div>';
+        } else {
+            html += `<div style="margin-top:8px;"><strong>Общая сумма бонусов: ${formatMoney(totalBonusUSD)}</strong></div>`;
+        }
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    // --- Модальные окна для портфеля ---
+    const addModal = document.getElementById('addModal');
+    let isEditMode = false, editingAssetId = null, selectedAsset = null;
+    function openAddModal(portfolioType, editId = null) {
+        currentPortfolioType = portfolioType;
+        if (editId) {
+            isEditMode = true;
+            editingAssetId = editId;
+            const portfolio = portfolioType === 'main' ? userData.main : userData.ton;
+            const asset = portfolio.find(a => a.id === editId);
+            if (asset) {
+                const info = assetsCatalog.find(c => c.id === editId);
+                document.getElementById('modalTitle').innerText = 'Редактировать актив';
+                document.getElementById('assetSearchInput').value = info ? info.name : editId;
+                document.getElementById('coinAmountInput').value = asset.amount;
+                document.getElementById('coinSpentInput').value = asset.investedUSD;
+                selectedAsset = info;
+            }
+        } else {
+            isEditMode = false;
+            editingAssetId = null;
+            document.getElementById('modalTitle').innerText = 'Новый актив';
+            document.getElementById('assetSearchInput').value = '';
+            document.getElementById('coinAmountInput').value = '';
+            document.getElementById('coinSpentInput').value = '';
+            selectedAsset = null;
+        }
+        addModal.style.display = 'flex';
+    }
+    function closeAddModal() {
+        addModal.style.display = 'none';
+        isEditMode = false;
+        editingAssetId = null;
+        selectedAsset = null;
+    }
+    document.getElementById('saveAssetBtn').addEventListener('click', async () => {
+        if (!selectedAsset) {
+            tg.showAlert('Выберите актив из списка');
+            return;
+        }
+        const amount = parseFloat(document.getElementById('coinAmountInput').value);
+        const spent = parseFloat(document.getElementById('coinSpentInput').value);
+        if (isNaN(amount) || isNaN(spent) || amount <= 0 || spent <= 0) {
+            tg.showAlert('Введите корректные значения');
+            return;
+        }
+        if (isEditMode && editingAssetId) {
+            await editAsset(editingAssetId, amount, spent, currentPortfolioType);
+        } else {
+            await addOrUpdateAsset(selectedAsset.id, amount, spent, currentPortfolioType);
+        }
+        closeAddModal();
+    });
+
+    const searchInput = document.getElementById('assetSearchInput');
+    const suggestions = document.getElementById('suggestionsList');
+    let debTimer;
+    function filterAssets(q) {
+        if (!q.trim()) return [];
+        const lower = q.toLowerCase();
+        return assetsCatalog.filter(a => a.name.toLowerCase().includes(lower) || a.keywords.some(k => k.includes(lower)));
+    }
+    function showSuggestions(list) {
+        if (!list.length) { suggestions.style.display = 'none'; return; }
+        suggestions.innerHTML = '';
+        list.forEach(asset => {
+            const div = document.createElement('div');
+            div.className = 'autocomplete-suggestion';
+            div.textContent = asset.name;
+            div.onclick = () => { selectedAsset = asset; searchInput.value = asset.name; suggestions.style.display = 'none'; };
+            suggestions.appendChild(div);
+        });
+        suggestions.style.display = 'block';
+    }
+    searchInput.addEventListener('input', e => {
+        clearTimeout(debTimer);
+        debTimer = setTimeout(() => { showSuggestions(filterAssets(e.target.value)); }, 200);
+    });
+    document.addEventListener('click', e => {
+        if (!searchInput.contains(e.target) && !suggestions.contains(e.target)) suggestions.style.display = 'none';
+    });
+
+    // --- Тема ---
+    let curTheme = localStorage.getItem('theme') || 'dark';
+    function applyTheme(theme) {
+        document.body.className = theme;
+        document.getElementById('themeToggleBtn').innerHTML = theme === 'dark' ? '☀️' : '🌙';
+        localStorage.setItem('theme', theme);
+        curTheme = theme;
+    }
+    applyTheme(curTheme);
+    document.getElementById('themeToggleBtn').addEventListener('click', () => applyTheme(curTheme === 'dark' ? 'light' : 'dark'));
+
+    // --- Переключение вкладок ---
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(`${tabId}Tab`).classList.add('active');
+        document.querySelector(`.tab-btn[data-tab="${tabId}"]`).classList.add('active');
+        currentPortfolioType = tabId;
+        if (tabId === 'bonus') {
+            loadBonuses();
+        } else {
+            updatePortfolioUI(tabId);
+        }
+    }
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab'))));
+
+    document.getElementById('openMainModalBtn').onclick = () => openAddModal('main');
+    document.getElementById('openTonModalBtn').onclick = () => openAddModal('ton');
+    document.getElementById('closeModalBtn').onclick = closeAddModal;
+    document.getElementById('closeDetailBtn').onclick = closeDetailModal;
+    document.getElementById('editAssetBtn').onclick = () => {
+        if (currentDetailAssetId && currentDetailType) {
+            const id = currentDetailAssetId, type = currentDetailType;
+            closeDetailModal();
+            openAddModal(type, id);
+        }
+    };
+    document.getElementById('deleteAssetBtn').onclick = async () => {
+        if (currentDetailAssetId && currentDetailType) {
+            if (confirm('Вы точно хотите удалить актив и всю историю?')) {
+                await deleteAsset(currentDetailAssetId, currentDetailType);
+                closeDetailModal();
+            }
+        }
+    };
+
+    document.getElementById('selectMainWalletBtn').onclick = () => selectBonusWallet('main');
+    document.getElementById('selectTonWalletBtn').onclick = () => selectBonusWallet('ton');
+    document.getElementById('closeBonusModalBtn').onclick = () => document.getElementById('bonusWalletModal').style.display = 'none';
+    document.getElementById('confirmBonusBtn').onclick = confirmBonusActivation;
+
+    (async () => {
+        await loadUserData();
+        await updatePortfolioUI('main');
+        await updatePortfolioUI('ton');
+        await loadBonuses();
+    })();
+</script>
+</body>
+</html>
