@@ -83,6 +83,8 @@
         .remove-bonus-btn{background:#ef4444; padding:2px 8px; font-size:11px; margin-left:8px; width:auto; display:inline-block;}
         .earnings-summary{background:var(--secondary-bg);border-radius:20px;padding:12px;margin-bottom:16px;border:1px solid var(--separator-color)}
         .earnings-summary-title{font-weight:700;margin-bottom:8px}
+        .available-bonus-section{margin-top:24px; border-top:1px solid var(--separator-color); padding-top:16px}
+        .available-bonus-title{font-weight:700; margin-bottom:12px; font-size:16px}
     </style>
 </head>
 <body>
@@ -126,7 +128,6 @@
     <div id="bonusTab" class="tab-content">
         <div class="balance-card" style="text-align: left;">
             <div class="balance-label">🎁 Доступные бонусы</div>
-            <div id="bonusList" style="margin-top: 12px;">Загрузка бонусов...</div>
         </div>
         <div class="sub-tabs">
             <button class="sub-tab-btn active" data-subtab="main">💰 Кошелёк</button>
@@ -139,14 +140,7 @@
 
 <div class="modal-overlay" id="bonusWalletModal">
     <div class="modal-content">
-        <div class="modal-title" id="bonusModalTitle">Выбор кошелька</div>
-        <div class="input-group">
-            <label>Выберите кошелёк</label>
-            <div style="display:flex; gap:12px; margin-top:8px;">
-                <button class="btn btn-secondary" id="selectMainWalletBtn" style="flex:1;">💰 Основной</button>
-                <button class="btn btn-secondary" id="selectTonWalletBtn" style="flex:1;">⛓️ TON</button>
-            </div>
-        </div>
+        <div class="modal-title" id="bonusModalTitle">Активация бонуса</div>
         <div id="bonusWalletInfo" style="margin-bottom:16px;"></div>
         <div class="input-group">
             <label>Количество актива для бонуса (макс: <span id="maxAmountSpan">0</span>)</label>
@@ -498,8 +492,7 @@ const assetsCatalog = [
     let currentDetailType = null;
 
     let currentBonusToActivate = null;
-    let selectedBonusWallet = null;
-    let selectedAssetForBonus = null;
+    let currentBonusWallet = null;   // 'main' или 'ton'
 
     async function loadUserData() {
         try {
@@ -673,6 +666,7 @@ const assetsCatalog = [
         }
         await saveUserData();
         updatePortfolioUI(type, true);
+        updateAllBonusesDisplays(); // обновить бонусы после изменения портфеля
     }
 
     async function deleteAsset(assetId, type) {
@@ -683,6 +677,7 @@ const assetsCatalog = [
         }
         await saveUserData();
         updatePortfolioUI(type, true);
+        updateAllBonusesDisplays(); // обновить бонусы
     }
 
     async function editAsset(assetId, newAmount, newInvested, type) {
@@ -696,6 +691,7 @@ const assetsCatalog = [
             asset.history.push({ date: new Date().toLocaleString(), amountDelta, investedDelta, type: 'edit' });
             await saveUserData();
             updatePortfolioUI(type, true);
+            updateAllBonusesDisplays();
         }
     }
 
@@ -703,9 +699,6 @@ const assetsCatalog = [
     let globalBonuses = {};
 
     async function loadBonuses() {
-        const container = document.getElementById('bonusList');
-        if (!container) return;
-        container.innerHTML = 'Загрузка бонусов...';
         try {
             const res = await fetch(BONUS_API_URL, {
                 headers: { 'ngrok-skip-browser-warning': '1' }
@@ -713,112 +706,16 @@ const assetsCatalog = [
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
             globalBonuses = data;
-            displayBonuses(data);
             updateAllBonusesDisplays();
         } catch (error) {
             console.error(error);
-            container.innerHTML = '<div style="color: var(--hint-color); text-align:center;">❌ Не удалось загрузить бонусы.</div>';
+            // Показываем ошибку в контейнерах, если нужно
+            document.getElementById('mainBonusesSummary').innerHTML = '<div style="color: var(--hint-color); text-align:center;">❌ Не удалось загрузить бонусы.</div>';
+            document.getElementById('tonBonusesSummary').innerHTML = '<div style="color: var(--hint-color); text-align:center;">❌ Не удалось загрузить бонусы.</div>';
         }
     }
 
-    function displayBonuses(bonuses) {
-        const container = document.getElementById('bonusList');
-        if (!container) return;
-        if (Object.keys(bonuses).length === 0) {
-            container.innerHTML = '<div style="color: var(--hint-color); text-align:center;">Бонусов пока нет.</div>';
-            return;
-        }
-        let html = '<div style="display:flex; flex-direction:column; gap:12px;">';
-        for (const [name, data] of Object.entries(bonuses)) {
-            const matchedAsset = assetsCatalog.find(asset => asset.short && asset.short.toUpperCase() === data.short.toUpperCase());
-            const hasAssetInPortfolio = matchedAsset ? (userData.main.some(a => a.id === matchedAsset.id) || userData.ton.some(a => a.id === matchedAsset.id)) : false;
-            const reducedInfo = (data.reduced_percent !== null && data.limit !== null) ? `<div class="bonus-detail">📉 Уменьшенный: ${data.reduced_percent}% (до ${data.limit})</div>` : '';
-            const compoundInfo = `<div class="bonus-detail">🔄 Сложный процент: ${data.compound ? 'Да' : 'Нет'}</div>`;
-            html += `
-                <div class="bonus-card" data-bonus-name="${escapeHtml(name)}" data-bonus-short="${escapeHtml(data.short)}">
-                    <div class="bonus-name">${escapeHtml(name)} <span class="bonus-short">${escapeHtml(data.short)}</span></div>
-                    <div class="bonus-details">
-                        <div class="bonus-detail">💰 Процент: ${data.percent}%</div>
-                        ${reducedInfo}
-                        ${compoundInfo}
-                    </div>
-                    ${hasAssetInPortfolio ? `<button class="btn bonus-action-btn" data-bonus-name="${escapeHtml(name)}" data-bonus-short="${escapeHtml(data.short)}">➕ Активировать бонус</button>` : '<div class="bonus-active">Нет актива в портфеле</div>'}
-                </div>
-            `;
-        }
-        html += '</div>';
-        container.innerHTML = html;
-
-        document.querySelectorAll('.bonus-action-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const bonusName = btn.getAttribute('data-bonus-name');
-                const bonusShort = btn.getAttribute('data-bonus-short');
-                const bonusData = globalBonuses[bonusName];
-                if (bonusData) {
-                    currentBonusToActivate = { name: bonusName, short: bonusShort, ...bonusData };
-                    showBonusWalletSelection();
-                }
-            });
-        });
-    }
-
-    function showBonusWalletSelection() {
-        document.getElementById('bonusModalTitle').innerText = `Активация бонуса ${currentBonusToActivate.name}`;
-        document.getElementById('bonusWalletInfo').innerHTML = '';
-        document.getElementById('bonusAmountInput').value = '';
-        document.getElementById('maxAmountSpan').innerText = '0';
-        document.getElementById('bonusWalletModal').style.display = 'flex';
-        selectedBonusWallet = null;
-        selectedAssetForBonus = null;
-    }
-
-    function selectBonusWallet(wallet) {
-        selectedBonusWallet = wallet;
-        const matchedAsset = assetsCatalog.find(asset => asset.short && asset.short.toUpperCase() === currentBonusToActivate.short.toUpperCase());
-        if (!matchedAsset) {
-            tg.showAlert('Не удалось сопоставить актив с бонусом');
-            return;
-        }
-        selectedAssetForBonus = matchedAsset;
-        const availableAmount = wallet === 'main'
-            ? (userData.main.find(a => a.id === matchedAsset.id)?.amount || 0)
-            : (userData.ton.find(a => a.id === matchedAsset.id)?.amount || 0);
-        document.getElementById('bonusWalletInfo').innerHTML = `<div>Доступно в ${wallet === 'main' ? 'кошельке' : 'TON портфеле'}: ${availableAmount} ${matchedAsset.name}</div>`;
-        document.getElementById('maxAmountSpan').innerText = availableAmount;
-        document.getElementById('bonusAmountInput').max = availableAmount;
-    }
-
-    async function confirmBonusActivation() {
-        if (!selectedBonusWallet || !selectedAssetForBonus) {
-            tg.showAlert('Выберите кошелёк');
-            return;
-        }
-        const amount = parseFloat(document.getElementById('bonusAmountInput').value);
-        const maxAmount = parseFloat(document.getElementById('maxAmountSpan').innerText);
-        if (isNaN(amount) || amount <= 0 || amount > maxAmount) {
-            tg.showAlert('Введите корректное количество');
-            return;
-        }
-        
-        if (!userData.bonuses[selectedAssetForBonus.id]) userData.bonuses[selectedAssetForBonus.id] = { main: null, ton: null };
-        if (!userData.bonuses[selectedAssetForBonus.id][selectedBonusWallet]) {
-            userData.bonuses[selectedAssetForBonus.id][selectedBonusWallet] = { asset_amount: 0, base_asset_amount: 0, lastDate: null };
-        }
-        const bonus = userData.bonuses[selectedAssetForBonus.id][selectedBonusWallet];
-        bonus.asset_amount += amount;
-        bonus.base_asset_amount += amount;
-        const now = new Date();
-        const todayNoon = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
-        bonus.lastDate = todayNoon.toISOString();
-        
-        await saveUserData();
-        tg.showAlert(`Бонус на ${amount} ${selectedAssetForBonus.name} активирован!`);
-        document.getElementById('bonusWalletModal').style.display = 'none';
-        updateAllBonusesDisplays();
-        loadBonuses();
-    }
-
+    // Отображает активные и доступные бонусы для конкретного кошелька
     function updateWalletBonusesDisplay(walletType) {
         const container = document.getElementById(`${walletType}BonusesSummary`);
         if (!container) return;
@@ -828,6 +725,7 @@ const assetsCatalog = [
         let activeHtml = '';
         let earningsHtml = '';
 
+        // Активные бонусы (уже активированные)
         for (const assetId in userData.bonuses) {
             const assetInfo = assetsCatalog.find(a => a.id === assetId);
             const assetName = assetInfo ? assetInfo.name : assetId;
@@ -855,15 +753,21 @@ const assetsCatalog = [
         if (activeHtml) {
             html += `<div class="bonus-summary"><div class="bonus-summary-title">📊 Активные бонусы</div>${activeHtml}<div style="margin-top:8px;"><strong>Общая сумма: ${formatMoney(totalBonusUSD)}</strong></div></div>`;
         } else {
-            html += `<div class="bonus-summary"><div class="bonus-summary-title">📊 Активные бонусы</div><div>У вас пока нет активных бонусов. Выберите бонус и активируйте его!</div></div>`;
+            html += `<div class="bonus-summary"><div class="bonus-summary-title">📊 Активные бонусы</div><div>У вас пока нет активных бонусов в этом кошельке.</div></div>`;
         }
 
         if (earningsHtml) {
             html += `<div class="earnings-summary"><div class="earnings-summary-title">💰 Заработано на бонусах</div>${earningsHtml}<div style="margin-top:8px;"><strong>Общая сумма заработка: ${formatMoney(totalEarnedUSD)}</strong></div></div>`;
         }
 
+        // Блок доступных бонусов
+        html += `<div class="available-bonus-section"><div class="available-bonus-title">🎁 Доступные для активации</div>`;
+        html += renderAvailableBonuses(walletType);
+        html += `</div>`;
+
         container.innerHTML = html;
 
+        // Обработчики для кнопок удаления
         container.querySelectorAll('.remove-bonus-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
@@ -872,6 +776,54 @@ const assetsCatalog = [
                 await removeBonus(assetId, wallet);
             });
         });
+
+        // Обработчики для кнопок активации доступных бонусов
+        container.querySelectorAll('.activate-bonus-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const bonusName = btn.getAttribute('data-bonus-name');
+                const bonusShort = btn.getAttribute('data-bonus-short');
+                const bonusData = globalBonuses[bonusName];
+                if (bonusData) {
+                    currentBonusToActivate = { name: bonusName, short: bonusShort, ...bonusData };
+                    currentBonusWallet = walletType; // запоминаем, для какого кошелька активируем
+                    showBonusActivationModal();
+                }
+            });
+        });
+    }
+
+    // Возвращает HTML со списком доступных бонусов для указанного кошелька
+    function renderAvailableBonuses(walletType) {
+        const portfolio = walletType === 'main' ? userData.main : userData.ton;
+        if (Object.keys(globalBonuses).length === 0) {
+            return '<div style="color: var(--hint-color); text-align:center;">Бонусов пока нет.</div>';
+        }
+        let html = '';
+        for (const [name, data] of Object.entries(globalBonuses)) {
+            // Находим актив по short (BTC, ETH и т.д.)
+            const matchedAsset = assetsCatalog.find(asset => asset.short && asset.short.toUpperCase() === data.short.toUpperCase());
+            if (!matchedAsset) continue;
+            const hasAsset = portfolio.some(a => a.id === matchedAsset.id);
+            if (!hasAsset) continue; // показываем только бонусы, для которых есть актив в этом кошельке
+
+            const reducedInfo = (data.reduced_percent !== null && data.limit !== null) ? `<div class="bonus-detail">📉 Уменьшенный: ${data.reduced_percent}% (до ${data.limit})</div>` : '';
+            const compoundInfo = `<div class="bonus-detail">🔄 Сложный процент: ${data.compound ? 'Да' : 'Нет'}</div>`;
+            html += `
+                <div class="bonus-card">
+                    <div class="bonus-name">${escapeHtml(name)} <span class="bonus-short">${escapeHtml(data.short)}</span></div>
+                    <div class="bonus-details">
+                        <div class="bonus-detail">💰 Процент: ${data.percent}%</div>
+                        ${reducedInfo}
+                        ${compoundInfo}
+                    </div>
+                    <button class="btn bonus-action-btn activate-bonus-btn" data-bonus-name="${escapeHtml(name)}" data-bonus-short="${escapeHtml(data.short)}">➕ Активировать бонус</button>
+                </div>
+            `;
+        }
+        if (html === '') {
+            html = '<div style="color: var(--hint-color); text-align:center;">Нет доступных бонусов для этого кошелька.</div>';
+        }
+        return html;
     }
 
     function updateAllBonusesDisplays() {
@@ -889,7 +841,72 @@ const assetsCatalog = [
         }
         await saveUserData();
         updateAllBonusesDisplays();
-        loadBonuses();
+        // не нужно перезагружать глобальные бонусы, они остаются
+    }
+
+    function showBonusActivationModal() {
+        if (!currentBonusToActivate || !currentBonusWallet) return;
+        const matchedAsset = assetsCatalog.find(asset => asset.short && asset.short.toUpperCase() === currentBonusToActivate.short.toUpperCase());
+        if (!matchedAsset) {
+            tg.showAlert('Не удалось сопоставить актив с бонусом');
+            return;
+        }
+
+        const portfolio = currentBonusWallet === 'main' ? userData.main : userData.ton;
+        const assetInPortfolio = portfolio.find(a => a.id === matchedAsset.id);
+        const availableAmount = assetInPortfolio ? assetInPortfolio.amount : 0;
+
+        document.getElementById('bonusModalTitle').innerText = `Активация бонуса: ${currentBonusToActivate.name}`;
+        document.getElementById('bonusWalletInfo').innerHTML = `<div>Кошелёк: <strong>${currentBonusWallet === 'main' ? 'Основной' : 'TON'}</strong><br>Доступно ${availableAmount} ${matchedAsset.name}</div>`;
+        document.getElementById('maxAmountSpan').innerText = availableAmount;
+        document.getElementById('bonusAmountInput').value = '';
+        document.getElementById('bonusAmountInput').max = availableAmount;
+        document.getElementById('bonusWalletModal').style.display = 'flex';
+    }
+
+    async function confirmBonusActivation() {
+        if (!currentBonusToActivate || !currentBonusWallet) {
+            tg.showAlert('Ошибка: не выбран бонус или кошелёк');
+            return;
+        }
+        const matchedAsset = assetsCatalog.find(asset => asset.short && asset.short.toUpperCase() === currentBonusToActivate.short.toUpperCase());
+        if (!matchedAsset) {
+            tg.showAlert('Не удалось сопоставить актив с бонусом');
+            return;
+        }
+
+        const amount = parseFloat(document.getElementById('bonusAmountInput').value);
+        const maxAmount = parseFloat(document.getElementById('maxAmountSpan').innerText);
+        if (isNaN(amount) || amount <= 0 || amount > maxAmount) {
+            tg.showAlert('Введите корректное количество');
+            return;
+        }
+
+        // Проверяем, есть ли актив в портфеле (повторно, на всякий случай)
+        const portfolio = currentBonusWallet === 'main' ? userData.main : userData.ton;
+        const assetInPortfolio = portfolio.find(a => a.id === matchedAsset.id);
+        if (!assetInPortfolio || assetInPortfolio.amount < amount) {
+            tg.showAlert('Недостаточно актива в портфеле');
+            return;
+        }
+
+        // Инициализируем структуру бонусов, если нужно
+        if (!userData.bonuses[matchedAsset.id]) userData.bonuses[matchedAsset.id] = { main: null, ton: null };
+        if (!userData.bonuses[matchedAsset.id][currentBonusWallet]) {
+            userData.bonuses[matchedAsset.id][currentBonusWallet] = { asset_amount: 0, base_asset_amount: 0, lastDate: null };
+        }
+        const bonus = userData.bonuses[matchedAsset.id][currentBonusWallet];
+        bonus.asset_amount += amount;
+        bonus.base_asset_amount += amount;
+        const now = new Date();
+        const todayNoon = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
+        bonus.lastDate = todayNoon.toISOString();
+
+        await saveUserData();
+        tg.showAlert(`Бонус на ${amount} ${matchedAsset.name} активирован в ${currentBonusWallet === 'main' ? 'основном' : 'TON'} кошельке!`);
+        document.getElementById('bonusWalletModal').style.display = 'none';
+        updateAllBonusesDisplays(); // обновить отображение
+        // также можно обновить список глобальных бонусов (но они не изменились)
     }
 
     function escapeHtml(str) {
@@ -1003,7 +1020,6 @@ const assetsCatalog = [
         document.querySelector(`.tab-btn[data-tab="${tabId}"]`).classList.add('active');
         currentPortfolioType = tabId;
         if (tabId === 'bonus') {
-            loadBonuses();
             updateAllBonusesDisplays();
         } else {
             updatePortfolioUI(tabId);
@@ -1042,11 +1058,8 @@ const assetsCatalog = [
         }
     };
 
-    document.getElementById('selectMainWalletBtn').onclick = () => selectBonusWallet('main');
-    document.getElementById('selectTonWalletBtn').onclick = () => selectBonusWallet('ton');
     document.getElementById('closeBonusModalBtn').onclick = () => document.getElementById('bonusWalletModal').style.display = 'none';
     document.getElementById('confirmBonusBtn').onclick = confirmBonusActivation;
-    
     document.getElementById('maxBonusAmountBtn').addEventListener('click', () => {
         const maxSpan = document.getElementById('maxAmountSpan');
         const maxVal = parseFloat(maxSpan.innerText);
@@ -1059,8 +1072,7 @@ const assetsCatalog = [
         await loadUserData();
         await updatePortfolioUI('main');
         await updatePortfolioUI('ton');
-        await loadBonuses();
-        updateAllBonusesDisplays();
+        await loadBonuses(); // загружает глобальные бонусы и обновляет отображение
     })();
 </script>
 </body>
