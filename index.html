@@ -544,21 +544,22 @@
             tg.showAlert('Введите корректное количество');
             return;
         }
-        const price = cachedPrices[selectedAssetForBonus.id] || 0;
-        if (price === 0) {
-            tg.showAlert('Не удалось получить цену актива');
-            return;
-        }
-        const bonusUSD = amount * price;
+        
+        // Сохраняем количество актива в бонус (в единицах актива, а не в USD)
         if (!userData.bonuses[selectedAssetForBonus.id]) userData.bonuses[selectedAssetForBonus.id] = { main: null, ton: null };
         if (!userData.bonuses[selectedAssetForBonus.id][selectedBonusWallet]) {
-            userData.bonuses[selectedAssetForBonus.id][selectedBonusWallet] = { amount: 0, base_amount: 0, lastDate: null };
+            userData.bonuses[selectedAssetForBonus.id][selectedBonusWallet] = { asset_amount: 0, base_asset_amount: 0, lastDate: null };
         }
         const bonus = userData.bonuses[selectedAssetForBonus.id][selectedBonusWallet];
-        bonus.amount += bonusUSD;
-        bonus.base_amount += bonusUSD;
+        bonus.asset_amount += amount;
+        bonus.base_asset_amount += amount;
+        // Обновляем дату последнего начисления (чтобы завтра начался расчёт процентов)
+        const now = new Date();
+        const todayNoon = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
+        bonus.lastDate = todayNoon.toISOString();
+        
         await saveUserData();
-        tg.showAlert(`Бонус на сумму ${formatMoney(bonusUSD)} активирован!`);
+        tg.showAlert(`Бонус на ${amount} ${selectedAssetForBonus.name} активирован!`);
         document.getElementById('bonusWalletModal').style.display = 'none';
         updateUserBonusesDisplay();
         loadBonuses();
@@ -572,12 +573,15 @@
         for (const assetId in userData.bonuses) {
             const assetInfo = assetsCatalog.find(a => a.id === assetId);
             const assetName = assetInfo ? assetInfo.name : assetId;
+            const shortName = assetInfo ? assetInfo.short : assetId.toUpperCase();
+            const currentPrice = cachedPrices[assetId] || 0;
             for (const wallet of ['main', 'ton']) {
                 const bonus = userData.bonuses[assetId]?.[wallet];
-                if (bonus && bonus.amount > 0) {
-                    totalBonusUSD += bonus.amount;
-                    html += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                <span>🎁 ${assetName} (${wallet === 'main' ? 'Кошелёк' : 'TON'}): ${formatMoney(bonus.amount)}</span>
+                if (bonus && bonus.asset_amount > 0) {
+                    const usdValue = bonus.asset_amount * currentPrice;
+                    totalBonusUSD += usdValue;
+                    html += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap;">
+                                <span style="flex:1;">🎁 ${assetName} (${wallet === 'main' ? 'Кошелёк' : 'TON'}): ${bonus.asset_amount.toFixed(6)} ${shortName} ≈ ${formatMoney(usdValue)}</span>
                                 <button class="btn remove-bonus-btn" data-asset-id="${assetId}" data-wallet="${wallet}">✖️ Удалить</button>
                             </div>`;
                 }
