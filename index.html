@@ -73,6 +73,8 @@
         .bonus-summary{background:var(--secondary-bg);border-radius:20px;padding:12px;margin-bottom:16px;border:1px solid var(--separator-color)}
         .bonus-summary-title{font-weight:700;margin-bottom:8px}
         .remove-bonus-btn{background:#ef4444; padding:2px 8px; font-size:11px; margin-left:8px; width:auto; display:inline-block;}
+        .earnings-summary{background:var(--secondary-bg);border-radius:20px;padding:12px;margin-bottom:16px;border:1px solid var(--separator-color)}
+        .earnings-summary-title{font-weight:700;margin-bottom:8px}
     </style>
 </head>
 <body>
@@ -568,8 +570,12 @@
     function updateUserBonusesDisplay() {
         const container = document.getElementById('userBonusesSummary');
         if (!container) return;
+
         let totalBonusUSD = 0;
-        let html = '<div class="bonus-summary"><div class="bonus-summary-title">📊 Ваши активные бонусы</div>';
+        let totalEarnedUSD = 0;
+        let activeHtml = '';
+        let earningsHtml = '';
+
         for (const assetId in userData.bonuses) {
             const assetInfo = assetsCatalog.find(a => a.id === assetId);
             const assetName = assetInfo ? assetInfo.name : assetId;
@@ -580,19 +586,32 @@
                 if (bonus && bonus.asset_amount > 0) {
                     const usdValue = bonus.asset_amount * currentPrice;
                     totalBonusUSD += usdValue;
-                    html += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap;">
+                    activeHtml += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap;">
                                 <span style="flex:1;">🎁 ${assetName} (${wallet === 'main' ? 'Кошелёк' : 'TON'}): ${bonus.asset_amount.toFixed(6)} ${shortName} ≈ ${formatMoney(usdValue)}</span>
                                 <button class="btn remove-bonus-btn" data-asset-id="${assetId}" data-wallet="${wallet}">✖️ Удалить</button>
                             </div>`;
+
+                    const earnedAmount = bonus.asset_amount - (bonus.base_asset_amount || 0);
+                    if (earnedAmount > 0) {
+                        const earnedUsd = earnedAmount * currentPrice;
+                        totalEarnedUSD += earnedUsd;
+                        earningsHtml += `<div style="margin-bottom: 6px;">💰 ${assetName} (${shortName}): +${earnedAmount.toFixed(6)} ${shortName} ≈ ${formatMoney(earnedUsd)}</div>`;
+                    }
                 }
             }
         }
-        if (totalBonusUSD === 0) {
-            html += '<div>У вас пока нет активных бонусов. Выберите бонус и активируйте его!</div>';
+
+        let html = '';
+        if (activeHtml) {
+            html += `<div class="bonus-summary"><div class="bonus-summary-title">📊 Ваши активные бонусы</div>${activeHtml}<div style="margin-top:8px;"><strong>Общая сумма бонусов: ${formatMoney(totalBonusUSD)}</strong></div></div>`;
         } else {
-            html += `<div style="margin-top:8px;"><strong>Общая сумма бонусов: ${formatMoney(totalBonusUSD)}</strong></div>`;
+            html += `<div class="bonus-summary"><div class="bonus-summary-title">📊 Ваши активные бонусы</div><div>У вас пока нет активных бонусов. Выберите бонус и активируйте его!</div></div>`;
         }
-        html += '</div>';
+
+        if (earningsHtml) {
+            html += `<div class="earnings-summary"><div class="earnings-summary-title">💰 Заработано на бонусах</div>${earningsHtml}<div style="margin-top:8px;"><strong>Общая сумма заработка: ${formatMoney(totalEarnedUSD)}</strong></div></div>`;
+        }
+
         container.innerHTML = html;
 
         container.querySelectorAll('.remove-bonus-btn').forEach(btn => {
