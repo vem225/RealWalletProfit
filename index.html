@@ -52,6 +52,9 @@
         .input-group{margin-bottom:18px}
         .input-group label{display:block;font-size:13px;color:var(--hint-color);margin-bottom:6px;font-weight:500}
         .input-group input{width:100%;padding:12px;border-radius:18px;border:1px solid var(--separator-color);background:var(--bg-color);color:var(--text-color);font-size:15px;outline:none}
+        .input-row{display:flex;gap:12px;align-items:center}
+        .input-row .input-group{flex:1;margin-bottom:0}
+        .btn-max{width:auto;padding:12px 16px;background:var(--button-bg);color:var(--text-color);border:1px solid var(--separator-color);margin-top:0}
         .autocomplete-container{position:relative}
         .autocomplete-suggestions{position:absolute;top:100%;left:0;right:0;background:var(--secondary-bg);border-radius:18px;max-height:180px;overflow-y:auto;z-index:10;box-shadow:var(--card-shadow)}
         .autocomplete-suggestion{padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--separator-color)}
@@ -137,7 +140,10 @@
         <div id="bonusWalletInfo" style="margin-bottom:16px;"></div>
         <div class="input-group">
             <label>Количество актива для бонуса (макс: <span id="maxAmountSpan">0</span>)</label>
-            <input type="number" id="bonusAmountInput" placeholder="0.00" step="any">
+            <div class="input-row">
+                <input type="number" id="bonusAmountInput" placeholder="0.00" step="any" style="flex:1;">
+                <button type="button" id="maxBonusAmountBtn" class="btn btn-secondary btn-max">MAX</button>
+            </div>
         </div>
         <div class="modal-buttons">
             <button class="btn btn-cancel" id="closeBonusModalBtn">Отмена</button>
@@ -547,7 +553,6 @@
             return;
         }
         
-        // Сохраняем количество актива в бонус (в единицах актива, а не в USD)
         if (!userData.bonuses[selectedAssetForBonus.id]) userData.bonuses[selectedAssetForBonus.id] = { main: null, ton: null };
         if (!userData.bonuses[selectedAssetForBonus.id][selectedBonusWallet]) {
             userData.bonuses[selectedAssetForBonus.id][selectedBonusWallet] = { asset_amount: 0, base_asset_amount: 0, lastDate: null };
@@ -555,7 +560,6 @@
         const bonus = userData.bonuses[selectedAssetForBonus.id][selectedBonusWallet];
         bonus.asset_amount += amount;
         bonus.base_asset_amount += amount;
-        // Обновляем дату последнего начисления (чтобы завтра начался расчёт процентов)
         const now = new Date();
         const todayNoon = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
         bonus.lastDate = todayNoon.toISOString();
@@ -779,6 +783,15 @@
     document.getElementById('selectTonWalletBtn').onclick = () => selectBonusWallet('ton');
     document.getElementById('closeBonusModalBtn').onclick = () => document.getElementById('bonusWalletModal').style.display = 'none';
     document.getElementById('confirmBonusBtn').onclick = confirmBonusActivation;
+    
+    // MAX button handler
+    document.getElementById('maxBonusAmountBtn').addEventListener('click', () => {
+        const maxSpan = document.getElementById('maxAmountSpan');
+        const maxVal = parseFloat(maxSpan.innerText);
+        if (!isNaN(maxVal) && maxVal > 0) {
+            document.getElementById('bonusAmountInput').value = maxVal;
+        }
+    });
 
     (async () => {
         await loadUserData();
