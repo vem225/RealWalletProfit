@@ -532,40 +532,51 @@
 
     function renderPortfolioData(type) {
         const portfolio = type === 'main' ? userData.main : userData.ton;
-        if (!portfolio.length) {
-            return {
-                assetListHtml: '<div style="text-align:center;padding:28px;color:var(--hint-color);">Портфель пуст. Добавьте активы ➕</div>',
-                totalBalance: '$0.00',
-                totalInvested: 0,
-                profitHtml: 'Нет данных',
-                profitClass: 'profit-badge'
-            };
-        }
-        let totalCurrent = 0, totalInvested = 0, html = '';
-        for (const asset of portfolio) {
-            const price = cachedPrices[asset.id] || 0;
-            const currentValue = asset.amount * price;
-            totalCurrent += currentValue;
-            totalInvested += asset.investedUSD;
-            const pnl = currentValue - asset.investedUSD;
-            const pnlClass = pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
-            const pnlSign = pnl >= 0 ? '+' : '';
-            const info = assetsCatalog.find(c => c.id === asset.id);
-            const name = info ? info.name : asset.id.toUpperCase();
-            html += `
-                <div class="asset-card" data-id="${asset.id}" data-type="${type}">
-                    <div class="asset-main">
-                        <span class="asset-name">${escapeHtml(name)}</span>
-                        <span class="asset-value">${formatMoney(currentValue)}</span>
+        let totalCurrent = 0;
+        let totalInvested = 0;
+        let html = '';
+
+        // Сначала активы
+        if (portfolio.length) {
+            for (const asset of portfolio) {
+                const price = cachedPrices[asset.id] || 0;
+                const currentValue = asset.amount * price;
+                totalCurrent += currentValue;
+                totalInvested += asset.investedUSD;
+                const pnl = currentValue - asset.investedUSD;
+                const pnlClass = pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
+                const pnlSign = pnl >= 0 ? '+' : '';
+                const info = assetsCatalog.find(c => c.id === asset.id);
+                const name = info ? info.name : asset.id.toUpperCase();
+                html += `
+                    <div class="asset-card" data-id="${asset.id}" data-type="${type}">
+                        <div class="asset-main">
+                            <span class="asset-name">${escapeHtml(name)}</span>
+                            <span class="asset-value">${formatMoney(currentValue)}</span>
+                        </div>
+                        <div class="asset-details">
+                            <span>${asset.amount} шт.</span>
+                            <span>цена: ${formatMoney(price)}</span>
+                        </div>
+                        <div class="asset-pnl ${pnlClass}" style="margin-top:6px;">${pnlSign}${formatMoney(pnl)}</div>
                     </div>
-                    <div class="asset-details">
-                        <span>${asset.amount} шт.</span>
-                        <span>цена: ${formatMoney(price)}</span>
-                    </div>
-                    <div class="asset-pnl ${pnlClass}" style="margin-top:6px;">${pnlSign}${formatMoney(pnl)}</div>
-                </div>
-            `;
+                `;
+            }
+        } else {
+            html = '<div style="text-align:center;padding:28px;color:var(--hint-color);">Портфель пуст. Добавьте активы ➕</div>';
         }
+
+        // Добавляем стоимость бонусов (активных)
+        let bonusTotal = 0;
+        for (const assetId in userData.bonuses) {
+            const bonusEntry = userData.bonuses[assetId]?.[type];
+            if (bonusEntry && bonusEntry.asset_amount > 0) {
+                const price = cachedPrices[assetId] || 0;
+                bonusTotal += bonusEntry.asset_amount * price;
+            }
+        }
+        totalCurrent += bonusTotal;
+
         const totalPnL = totalCurrent - totalInvested;
         let profitHtml, profitClass;
         if (totalPnL >= 0) {
@@ -575,7 +586,14 @@
             profitClass = 'profit-badge negative';
             profitHtml = `${formatMoney(totalPnL)} убытка`;
         }
-        return { assetListHtml: html, totalBalance: formatMoney(totalCurrent), totalInvested, profitHtml, profitClass };
+
+        return {
+            assetListHtml: html,
+            totalBalance: formatMoney(totalCurrent),
+            totalInvested,
+            profitHtml,
+            profitClass
+        };
     }
 
     function applySnapshot(type, snap) {
@@ -853,6 +871,7 @@
         }
         await saveUserData();
         updateAllBonusesDisplays();
+        await updatePrices(walletType, true); // обновляем баланс после удаления бонуса
     }
 
     function showBonusActivationModal() {
@@ -915,6 +934,7 @@
         tg.showAlert(`Бонус на ${amount} ${matchedAsset.name} активирован в ${currentBonusWallet === 'main' ? 'основном' : 'TON'} кошельке!`);
         document.getElementById('bonusWalletModal').style.display = 'none';
         updateAllBonusesDisplays();
+        await updatePrices(currentBonusWallet, true); // обновляем баланс после активации
     }
 
     function escapeHtml(str) {
