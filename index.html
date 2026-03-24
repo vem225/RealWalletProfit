@@ -261,13 +261,11 @@
         <!-- Блок графика -->
         <div class="chart-container">
             <div class="chart-interval-buttons" id="intervalButtons">
-                <button class="interval-btn" data-days="1">1Ч</button>
                 <button class="interval-btn" data-days="0.5">12Ч</button>
                 <button class="interval-btn active" data-days="1">1Д</button>
                 <button class="interval-btn" data-days="7">7Д</button>
                 <button class="interval-btn" data-days="30">1М</button>
                 <button class="interval-btn" data-days="365">1Г</button>
-                <button class="interval-btn" data-days="max">Всё время</button>
             </div>
             <div id="chartStats" class="chart-stats" style="display: none;">
                 <div>
@@ -835,7 +833,6 @@
         
         try {
             let daysParam = days;
-            if (days === 'max') daysParam = 'max';
             const cacheKey = `${assetId}_${daysParam}`;
             const now = Date.now();
             if (historicalCache[cacheKey] && (now - historicalCache[cacheKey].timestamp) < 5 * 60 * 1000) {
@@ -846,12 +843,7 @@
                 return;
             }
             
-            let url;
-            if (daysParam === 'max') {
-                url = `https://api.coingecko.com/api/v3/coins/${assetId}/market_chart?vs_currency=usd&days=3650`;
-            } else {
-                url = `https://api.coingecko.com/api/v3/coins/${assetId}/market_chart?vs_currency=usd&days=${daysParam}`;
-            }
+            let url = `https://api.coingecko.com/api/v3/coins/${assetId}/market_chart?vs_currency=usd&days=${daysParam}`;
             
             const response = await fetch(url, { signal: abortController.signal });
             if (!response.ok) {
