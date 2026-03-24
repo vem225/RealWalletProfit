@@ -205,6 +205,22 @@
     const BONUS_API_URL = `${API_BASE}/bonuses`;
     const USER_API = (userId) => `${API_BASE}/user/${userId}`;
 
+    // Получаем initData для аутентификации
+    const initData = tg.initData || '';
+
+    // Функция для формирования заголовков с initData
+    function getHeaders() {
+        const headers = {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': '1'
+        };
+        if (initData) {
+            headers['X-Telegram-Init-Data'] = initData;
+        }
+        return headers;
+    }
+
+    // Для локальной отладки сохраняем userId (но сервер будет игнорировать его, если есть initData)
     let userId = null;
     if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
         userId = tg.initDataUnsafe.user.id;
@@ -497,7 +513,7 @@
     async function loadUserData() {
         try {
             const res = await fetch(USER_API(userId), {
-                headers: { 'ngrok-skip-browser-warning': '1' }
+                headers: getHeaders()
             });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
@@ -518,10 +534,7 @@
         try {
             await fetch(USER_API(userId), {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'ngrok-skip-browser-warning': '1'
-                },
+                headers: getHeaders(),
                 body: JSON.stringify(userData)
             });
         } catch (e) {
@@ -533,7 +546,6 @@
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
     }
 
-    // Вычисляет сумму заработанных бонусов (текущая сумма минус базовая) для конкретного кошелька
     function calculateTotalBonusEarned(walletType) {
         let totalEarnedUSD = 0;
         for (const assetId in userData.bonuses) {
@@ -553,7 +565,6 @@
         let totalInvested = 0;
         let html = '';
 
-        // Активы
         if (portfolio.length) {
             for (const asset of portfolio) {
                 const price = cachedPrices[asset.id] || 0;
@@ -583,10 +594,8 @@
             html = '<div style="text-align:center;padding:28px;color:var(--hint-color);">Портфель пуст. Добавьте активы ➕</div>';
         }
 
-        // Добавляем заработанные бонусы к общей стоимости
         const totalBonusEarned = calculateTotalBonusEarned(type);
         const totalCurrentWithBonuses = totalCurrent + totalBonusEarned;
-
         const totalPnL = totalCurrentWithBonuses - totalInvested;
         let profitHtml, profitClass;
         if (totalPnL >= 0) {
@@ -692,7 +701,7 @@
         if (asset.history?.length) {
             [...asset.history].reverse().forEach(h => {
                 const sign = h.amountDelta >= 0 ? '+' : '';
-                html += `<div class="history-item"><div>${h.date}</div><div>${sign}${h.amountDelta} шт. ($${Math.abs(h.investedDelta).toFixed(2)})</div></div>`;
+                html += `<div class="history-item"><div>${escapeHtml(h.date)}</div><div>${sign}${h.amountDelta} шт. ($${Math.abs(h.investedDelta).toFixed(2)})</div></div>`;
             });
         } else html += '<div class="history-item">Нет операций</div>';
         document.getElementById('historyList').innerHTML = html;
@@ -752,7 +761,7 @@
     async function loadBonuses() {
         try {
             const res = await fetch(BONUS_API_URL, {
-                headers: { 'ngrok-skip-browser-warning': '1' }
+                headers: getHeaders()
             });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
@@ -784,7 +793,7 @@
                 const usdValue = bonus.asset_amount * currentPrice;
                 totalBonusUSD += usdValue;
                 activeHtml += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap;">
-                            <span style="flex:1;">🎁 ${assetName}: ${bonus.asset_amount.toFixed(6)} ${shortName} ≈ ${formatMoney(usdValue)}</span>
+                            <span style="flex:1;">🎁 ${escapeHtml(assetName)}: ${bonus.asset_amount.toFixed(6)} ${escapeHtml(shortName)} ≈ ${formatMoney(usdValue)}</span>
                             <button class="btn remove-bonus-btn" data-asset-id="${assetId}" data-wallet="${walletType}">✖️ Удалить</button>
                         </div>`;
 
@@ -792,7 +801,7 @@
                 if (earnedAmount > 0) {
                     const earnedUsd = earnedAmount * currentPrice;
                     totalEarnedUSD += earnedUsd;
-                    earningsHtml += `<div style="margin-bottom: 6px;">💰 ${assetName} (${shortName}): +${earnedAmount.toFixed(6)} ${shortName} ≈ ${formatMoney(earnedUsd)}</div>`;
+                    earningsHtml += `<div style="margin-bottom: 6px;">💰 ${escapeHtml(assetName)} (${escapeHtml(shortName)}): +${earnedAmount.toFixed(6)} ${escapeHtml(shortName)} ≈ ${formatMoney(earnedUsd)}</div>`;
                 }
             }
         }
@@ -872,7 +881,6 @@
     function updateAllBonusesDisplays() {
         updateWalletBonusesDisplay('main');
         updateWalletBonusesDisplay('ton');
-        // также обновляем главные вкладки, чтобы пересчиталась сумма заработанных бонусов
         updatePrices('main');
         updatePrices('ton');
     }
