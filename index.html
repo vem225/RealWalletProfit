@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <title>RealWalletProfit | Элитный портфель</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background-color:var(--bg-color,#0a0a0a);color:var(--text-color,#fff);padding:12px 12px 32px;min-height:100vh;transition:background-color .3s,color .3s}
@@ -86,6 +87,52 @@
         .earnings-summary-title{font-weight:700;margin-bottom:8px}
         .available-bonus-section{margin-top:24px; border-top:1px solid var(--separator-color); padding-top:16px}
         .available-bonus-title{font-weight:700; margin-bottom:12px; font-size:16px}
+        
+        /* График */
+        .chart-container {
+            margin: 20px 0;
+            padding: 12px;
+            background: var(--bg-color);
+            border-radius: 20px;
+        }
+        .chart-interval-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+            justify-content: center;
+        }
+        .interval-btn {
+            background: var(--button-bg);
+            border: none;
+            border-radius: 30px;
+            padding: 6px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--text-color);
+            transition: all 0.2s;
+        }
+        .interval-btn.active {
+            background: linear-gradient(135deg,#3b82f6,#6366f1);
+            color: white;
+        }
+        .chart-loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--hint-color);
+            font-size: 14px;
+        }
+        .chart-error {
+            text-align: center;
+            padding: 20px;
+            color: #ef4444;
+            font-size: 14px;
+        }
+        canvas {
+            max-height: 250px;
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -183,10 +230,27 @@
         </div>
     </div>
 </div>
+
 <div class="modal-overlay" id="detailModal">
     <div class="modal-content">
         <div class="modal-title" id="detailTitle"></div>
         <div id="detailContent"></div>
+        
+        <!-- Блок графика -->
+        <div class="chart-container">
+            <div class="chart-interval-buttons" id="intervalButtons">
+                <button class="interval-btn" data-days="1">1Ч</button>
+                <button class="interval-btn" data-days="0.5">12Ч</button>
+                <button class="interval-btn active" data-days="1">1Д</button>
+                <button class="interval-btn" data-days="7">7Д</button>
+                <button class="interval-btn" data-days="30">1М</button>
+                <button class="interval-btn" data-days="365">1Г</button>
+                <button class="interval-btn" data-days="max">Всё время</button>
+            </div>
+            <canvas id="priceChart" width="400" height="200" style="width:100%; height:200px;"></canvas>
+            <div id="chartStatus" class="chart-loading">Загрузка графика...</div>
+        </div>
+        
         <div class="history-list" id="historyList"></div>
         <div class="modal-buttons" style="margin-top:20px">
             <button class="btn btn-cancel" id="closeDetailBtn">Закрыть</button>
@@ -205,10 +269,8 @@
     const BONUS_API_URL = `${API_BASE}/bonuses`;
     const USER_API = (userId) => `${API_BASE}/user/${userId}`;
 
-    // Получаем initData для аутентификации
     const initData = tg.initData || '';
 
-    // Функция для формирования заголовков с initData
     function getHeaders() {
         const headers = {
             'Content-Type': 'application/json',
@@ -220,7 +282,6 @@
         return headers;
     }
 
-    // Для локальной отладки сохраняем userId (но сервер будет игнорировать его, если есть initData)
     let userId = null;
     if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
         userId = tg.initDataUnsafe.user.id;
@@ -510,6 +571,12 @@
     let currentBonusToActivate = null;
     let currentBonusWallet = null;
 
+    // График
+    let priceChart = null;
+    let currentChartAssetId = null;
+    let abortController = null;
+    const historicalCache = {}; // { assetId_days: { prices, timestamps, lastFetch } }
+
     async function loadUserData() {
         try {
             const res = await fetch(USER_API(userId), {
@@ -705,13 +772,146 @@
             });
         } else html += '<div class="history-item">Нет операций</div>';
         document.getElementById('historyList').innerHTML = html;
+        
+        // Инициализация графика
+        initChart(assetId);
+        
         document.getElementById('detailModal').style.display = 'flex';
+    }
+
+    function initChart(assetId) {
+        currentChartAssetId = assetId;
+        if (priceChart) {
+            priceChart.destroy();
+            priceChart = null;
+        }
+        // Устанавливаем активную кнопку по умолчанию 1Д
+        document.querySelectorAll('.interval-btn').forEach(btn => btn.classList.remove('active'));
+        const defaultBtn = document.querySelector('.interval-btn[data-days="1"]');
+        if (defaultBtn) defaultBtn.classList.add('active');
+        loadHistoricalData(assetId, 1); // загружаем за 1 день
+    }
+
+    async function loadHistoricalData(assetId, days) {
+        const statusDiv = document.getElementById('chartStatus');
+        statusDiv.className = 'chart-loading';
+        statusDiv.innerText = 'Загрузка данных...';
+        
+        // Отменяем предыдущий запрос, если есть
+        if (abortController) {
+            abortController.abort();
+        }
+        abortController = new AbortController();
+        
+        try {
+            let daysParam = days;
+            if (days === 'max') daysParam = 'max';
+            const cacheKey = `${assetId}_${daysParam}`;
+            const now = Date.now();
+            // Кэшируем на 5 минут для уменьшения нагрузки
+            if (historicalCache[cacheKey] && (now - historicalCache[cacheKey].timestamp) < 5 * 60 * 1000) {
+                const cached = historicalCache[cacheKey];
+                renderChart(cached.prices, cached.timestamps);
+                statusDiv.style.display = 'none';
+                return;
+            }
+            
+            let url;
+            if (daysParam === 'max') {
+                // Для max используем 3650 дней (10 лет) или максимальное доступное, но CoinGecko ограничивает
+                url = `https://api.coingecko.com/api/v3/coins/${assetId}/market_chart?vs_currency=usd&days=3650`;
+            } else {
+                url = `https://api.coingecko.com/api/v3/coins/${assetId}/market_chart?vs_currency=usd&days=${daysParam}`;
+            }
+            
+            const response = await fetch(url, { signal: abortController.signal });
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            const data = await response.json();
+            if (!data.prices || !data.prices.length) {
+                throw new Error('Нет данных');
+            }
+            const prices = data.prices.map(p => p[1]);
+            const timestamps = data.prices.map(p => {
+                const date = new Date(p[0]);
+                return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+            });
+            // Кэшируем
+            historicalCache[cacheKey] = {
+                prices,
+                timestamps,
+                timestamp: Date.now()
+            };
+            renderChart(prices, timestamps);
+            statusDiv.style.display = 'none';
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                console.log('Запрос отменён');
+                return;
+            }
+            console.error('Ошибка загрузки исторических данных:', error);
+            statusDiv.className = 'chart-error';
+            statusDiv.innerText = 'Не удалось загрузить график. Возможно, актив не поддерживается.';
+        }
+    }
+    
+    function renderChart(prices, timestamps) {
+        const ctx = document.getElementById('priceChart').getContext('2d');
+        if (priceChart) {
+            priceChart.destroy();
+        }
+        // Если данных слишком много для читаемости, прореживаем (например, для max)
+        let displayPrices = prices;
+        let displayLabels = timestamps;
+        if (prices.length > 500) {
+            const step = Math.floor(prices.length / 500);
+            displayPrices = [];
+            displayLabels = [];
+            for (let i = 0; i < prices.length; i += step) {
+                displayPrices.push(prices[i]);
+                displayLabels.push(timestamps[i]);
+            }
+        }
+        priceChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: displayLabels,
+                datasets: [{
+                    label: 'Цена (USD)',
+                    data: displayPrices,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59,130,246,0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 0,
+                    pointHoverRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { mode: 'index', intersect: false }
+                },
+                scales: {
+                    x: { ticks: { maxRotation: 45, minRotation: 30, font: { size: 10 } } },
+                    y: { ticks: { callback: (val) => '$' + val.toFixed(2) } }
+                }
+            }
+        });
     }
 
     function closeDetailModal() {
         document.getElementById('detailModal').style.display = 'none';
         currentDetailAssetId = null;
         currentDetailType = null;
+        if (abortController) {
+            abortController.abort();
+            abortController = null;
+        }
     }
 
     async function addOrUpdateAsset(assetId, amountDelta, investedDelta, type) {
@@ -1112,6 +1312,19 @@
         if (!isNaN(maxVal) && maxVal > 0) {
             document.getElementById('bonusAmountInput').value = maxVal;
         }
+    });
+
+    // Обработчики кнопок интервалов
+    document.getElementById('intervalButtons').addEventListener('click', (e) => {
+        const btn = e.target.closest('.interval-btn');
+        if (!btn) return;
+        const days = btn.getAttribute('data-days');
+        if (!currentChartAssetId) return;
+        // Обновляем активную кнопку
+        document.querySelectorAll('.interval-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        // Загружаем данные
+        loadHistoricalData(currentChartAssetId, days);
     });
 
     (async () => {
