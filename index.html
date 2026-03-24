@@ -133,6 +133,28 @@
             max-height: 250px;
             width: 100%;
         }
+        .chart-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 12px;
+            padding: 8px 12px;
+            background: var(--secondary-bg);
+            border-radius: 16px;
+            font-size: 14px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .stats-change {
+            font-weight: 700;
+            font-size: 18px;
+        }
+        .stats-change.positive { color: #22c55e; }
+        .stats-change.negative { color: #ef4444; }
+        .stats-prices {
+            color: var(--hint-color);
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
@@ -246,6 +268,14 @@
                 <button class="interval-btn" data-days="30">1М</button>
                 <button class="interval-btn" data-days="365">1Г</button>
                 <button class="interval-btn" data-days="max">Всё время</button>
+            </div>
+            <div id="chartStats" class="chart-stats" style="display: none;">
+                <div>
+                    <span id="statsStartPrice">$0.00</span> → <span id="statsEndPrice">$0.00</span>
+                </div>
+                <div>
+                    <span id="statsChangePercent" class="stats-change">0.00%</span>
+                </div>
             </div>
             <canvas id="priceChart" width="400" height="200" style="width:100%; height:200px;"></canvas>
             <div id="chartStatus" class="chart-loading">Загрузка графика...</div>
@@ -575,7 +605,7 @@
     let priceChart = null;
     let currentChartAssetId = null;
     let abortController = null;
-    const historicalCache = {}; // { assetId_days: { prices, timestamps, lastFetch } }
+    const historicalCache = {};
 
     async function loadUserData() {
         try {
@@ -785,11 +815,12 @@
             priceChart.destroy();
             priceChart = null;
         }
-        // Устанавливаем активную кнопку по умолчанию 1Д
+        // Скрываем статистику до загрузки
+        document.getElementById('chartStats').style.display = 'none';
         document.querySelectorAll('.interval-btn').forEach(btn => btn.classList.remove('active'));
         const defaultBtn = document.querySelector('.interval-btn[data-days="1"]');
         if (defaultBtn) defaultBtn.classList.add('active');
-        loadHistoricalData(assetId, 1); // загружаем за 1 день
+        loadHistoricalData(assetId, 1);
     }
 
     async function loadHistoricalData(assetId, days) {
@@ -797,7 +828,6 @@
         statusDiv.className = 'chart-loading';
         statusDiv.innerText = 'Загрузка данных...';
         
-        // Отменяем предыдущий запрос, если есть
         if (abortController) {
             abortController.abort();
         }
@@ -808,17 +838,16 @@
             if (days === 'max') daysParam = 'max';
             const cacheKey = `${assetId}_${daysParam}`;
             const now = Date.now();
-            // Кэшируем на 5 минут для уменьшения нагрузки
             if (historicalCache[cacheKey] && (now - historicalCache[cacheKey].timestamp) < 5 * 60 * 1000) {
                 const cached = historicalCache[cacheKey];
                 renderChart(cached.prices, cached.timestamps);
+                updateChartStats(cached.prices);
                 statusDiv.style.display = 'none';
                 return;
             }
             
             let url;
             if (daysParam === 'max') {
-                // Для max используем 3650 дней (10 лет) или максимальное доступное, но CoinGecko ограничивает
                 url = `https://api.coingecko.com/api/v3/coins/${assetId}/market_chart?vs_currency=usd&days=3650`;
             } else {
                 url = `https://api.coingecko.com/api/v3/coins/${assetId}/market_chart?vs_currency=usd&days=${daysParam}`;
@@ -837,13 +866,13 @@
                 const date = new Date(p[0]);
                 return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
             });
-            // Кэшируем
             historicalCache[cacheKey] = {
                 prices,
                 timestamps,
                 timestamp: Date.now()
             };
             renderChart(prices, timestamps);
+            updateChartStats(prices);
             statusDiv.style.display = 'none';
         } catch (error) {
             if (error.name === 'AbortError') {
@@ -853,7 +882,29 @@
             console.error('Ошибка загрузки исторических данных:', error);
             statusDiv.className = 'chart-error';
             statusDiv.innerText = 'Не удалось загрузить график. Возможно, актив не поддерживается.';
+            document.getElementById('chartStats').style.display = 'none';
         }
+    }
+    
+    function updateChartStats(prices) {
+        if (!prices || prices.length < 2) {
+            document.getElementById('chartStats').style.display = 'none';
+            return;
+        }
+        const startPrice = prices[0];
+        const endPrice = prices[prices.length - 1];
+        const changePercent = ((endPrice - startPrice) / startPrice) * 100;
+        const statsDiv = document.getElementById('chartStats');
+        const startPriceSpan = document.getElementById('statsStartPrice');
+        const endPriceSpan = document.getElementById('statsEndPrice');
+        const changeSpan = document.getElementById('statsChangePercent');
+        
+        startPriceSpan.innerText = formatMoney(startPrice);
+        endPriceSpan.innerText = formatMoney(endPrice);
+        changeSpan.innerText = (changePercent >= 0 ? '+' : '') + changePercent.toFixed(2) + '%';
+        changeSpan.className = 'stats-change ' + (changePercent >= 0 ? 'positive' : 'negative');
+        
+        statsDiv.style.display = 'flex';
     }
     
     function renderChart(prices, timestamps) {
@@ -861,7 +912,6 @@
         if (priceChart) {
             priceChart.destroy();
         }
-        // Если данных слишком много для читаемости, прореживаем (например, для max)
         let displayPrices = prices;
         let displayLabels = timestamps;
         if (prices.length > 500) {
@@ -1314,16 +1364,13 @@
         }
     });
 
-    // Обработчики кнопок интервалов
     document.getElementById('intervalButtons').addEventListener('click', (e) => {
         const btn = e.target.closest('.interval-btn');
         if (!btn) return;
         const days = btn.getAttribute('data-days');
         if (!currentChartAssetId) return;
-        // Обновляем активную кнопку
         document.querySelectorAll('.interval-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        // Загружаем данные
         loadHistoricalData(currentChartAssetId, days);
     });
 
