@@ -553,7 +553,7 @@
         let totalInvested = 0;
         let html = '';
 
-        // Активы (без бонусов)
+        // Активы
         if (portfolio.length) {
             for (const asset of portfolio) {
                 const price = cachedPrices[asset.id] || 0;
@@ -583,7 +583,11 @@
             html = '<div style="text-align:center;padding:28px;color:var(--hint-color);">Портфель пуст. Добавьте активы ➕</div>';
         }
 
-        const totalPnL = totalCurrent - totalInvested;
+        // Добавляем заработанные бонусы к общей стоимости
+        const totalBonusEarned = calculateTotalBonusEarned(type);
+        const totalCurrentWithBonuses = totalCurrent + totalBonusEarned;
+
+        const totalPnL = totalCurrentWithBonuses - totalInvested;
         let profitHtml, profitClass;
         if (totalPnL >= 0) {
             profitClass = 'profit-badge positive';
@@ -593,11 +597,9 @@
             profitHtml = `${formatMoney(totalPnL)} убытка`;
         }
 
-        const totalBonusEarned = calculateTotalBonusEarned(type);
-
         return {
             assetListHtml: html,
-            totalBalance: formatMoney(totalCurrent),
+            totalBalance: formatMoney(totalCurrentWithBonuses),
             totalInvested,
             profitHtml,
             profitClass,
